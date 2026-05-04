@@ -1,0 +1,21 @@
+[
+  {
+    "id": 1777933202937,
+    "userId": 1777931109806,
+    "type": "follow",
+    "fromUser": "sskint",
+    "fromId": 3,
+    "read": false,
+    "date": "2026-05-04T22:20:02.937Z"
+  },
+  {
+    "id": 1777934779875,
+    "userId": 1777931109806,
+    "type": "ticket_reply",
+    "fromUser": "sskint",
+    "ticketId": 1777931777803,
+    "subject": "thrth",
+    "read": false,
+    "date": "2026-05-04T22:46:19.875Z"
+  }
+]

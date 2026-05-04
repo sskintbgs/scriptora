@@ -1,0 +1,120 @@
+[
+  {
+    "id": 1777931056355,
+    "userId": 3,
+    "username": "sskint",
+    "subject": "bug",
+    "category": "bug",
+    "priority": "low",
+    "status": "closed",
+    "messages": [
+      {
+        "id": 1,
+        "userId": 3,
+        "username": "sskint",
+        "text": "bug bug",
+        "date": "2026-05-04T21:44:16.355Z",
+        "isStaff": false
+      }
+    ],
+    "createdAt": "2026-05-04T21:44:16.355Z",
+    "updatedAt": "2026-05-04T22:10:03.314Z",
+    "claimedBy": "sskint",
+    "claimedById": 3,
+    "closedBy": "sskint",
+    "closedAt": "2026-05-04T22:10:03.314Z"
+  },
+  {
+    "id": 1777931142713,
+    "userId": 1777931109806,
+    "username": "gff",
+    "subject": "bug bug",
+    "category": "bug",
+    "priority": "low",
+    "status": "replied",
+    "messages": [
+      {
+        "id": 1,
+        "userId": 1777931109806,
+        "username": "gff",
+        "text": "bug bug",
+        "date": "2026-05-04T21:45:42.713Z",
+        "isStaff": false
+      },
+      {
+        "id": 2,
+        "userId": 1777931109806,
+        "username": "gff",
+        "text": "hello",
+        "date": "2026-05-04T21:45:46.646Z",
+        "isStaff": false
+      },
+      {
+        "id": 3,
+        "userId": 3,
+        "username": "sskint",
+        "text": "55tert",
+        "date": "2026-05-04T22:13:31.885Z",
+        "isStaff": true
+      }
+    ],
+    "createdAt": "2026-05-04T21:45:42.713Z",
+    "updatedAt": "2026-05-04T22:13:31.885Z"
+  },
+  {
+    "id": 1777931777803,
+    "userId": 1777931109806,
+    "username": "gff",
+    "subject": "thrth",
+    "category": "general",
+    "priority": "medium",
+    "status": "closed",
+    "messages": [
+      {
+        "id": 1,
+        "userId": 1777931109806,
+        "username": "gff",
+        "text": "rthrthtr",
+        "date": "2026-05-04T21:56:17.803Z",
+        "isStaff": false
+      },
+      {
+        "id": 2,
+        "userId": 3,
+        "username": "sskint",
+        "text": "`shutup nigga",
+        "date": "2026-05-04T22:46:19.874Z",
+        "isStaff": true
+      }
+    ],
+    "createdAt": "2026-05-04T21:56:17.803Z",
+    "updatedAt": "2026-05-04T22:46:24.607Z",
+    "closedBy": "sskint",
+    "closedAt": "2026-05-04T22:46:24.606Z"
+  },
+  {
+    "id": 1777932551806,
+    "userId": 1777931109806,
+    "username": "gff",
+    "subject": "wefwef",
+    "category": "general",
+    "priority": "medium",
+    "status": "closed",
+    "messages": [
+      {
+        "id": 1,
+        "userId": 1777931109806,
+        "username": "gff",
+        "text": "wefwef",
+        "date": "2026-05-04T22:09:11.806Z",
+        "isStaff": false
+      }
+    ],
+    "createdAt": "2026-05-04T22:09:11.806Z",
+    "updatedAt": "2026-05-04T22:10:13.079Z",
+    "closedBy": "sskint",
+    "closedAt": "2026-05-04T22:10:11.769Z",
+    "claimedBy": "sskint",
+    "claimedById": 3
+  }
+]

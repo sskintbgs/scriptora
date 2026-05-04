@@ -1,0 +1,149 @@
+[
+  {
+    "id": 1777933938898,
+    "action": "Login",
+    "actor": "sskint",
+    "details": "User sskint logged in",
+    "date": "2026-05-04T22:32:18.898Z"
+  },
+  {
+    "id": 1777933293517,
+    "action": "Login",
+    "actor": "sskint",
+    "details": "User sskint logged in",
+    "date": "2026-05-04T22:21:33.517Z"
+  },
+  {
+    "id": 1777931211538,
+    "action": "Role Updated",
+    "actor": "sskint",
+    "details": "admin → user",
+    "date": "2026-05-04T21:46:51.538Z"
+  },
+  {
+    "id": 1777931190298,
+    "action": "Login",
+    "actor": "sskint",
+    "details": "User sskint logged in",
+    "date": "2026-05-04T21:46:30.298Z"
+  },
+  {
+    "id": 1777931109820,
+    "action": "Registration",
+    "actor": "system",
+    "details": "New user registered: gff",
+    "date": "2026-05-04T21:45:09.820Z"
+  },
+  {
+    "id": 1777930338985,
+    "action": "Login",
+    "actor": "sskint",
+    "details": "User sskint logged in",
+    "date": "2026-05-04T21:32:18.985Z"
+  },
+  {
+    "id": 1777930180747,
+    "action": "Login",
+    "actor": "sskint",
+    "details": "User sskint logged in",
+    "date": "2026-05-04T21:29:40.747Z"
+  },
+  {
+    "id": 1777930026304,
+    "action": "Login",
+    "actor": "sskint",
+    "details": "User sskint logged in",
+    "date": "2026-05-04T21:27:06.304Z"
+  },
+  {
+    "id": 1777929472935,
+    "action": "Login",
+    "actor": "sskint",
+    "details": "User sskint logged in",
+    "date": "2026-05-04T21:17:52.935Z"
+  },
+  {
+    "id": 1777927537895,
+    "action": "Script Deleted",
+    "actor": "sskint",
+    "details": "\"Blox Fruits Auto Farm Hub\" deleted",
+    "date": "2026-05-04T20:45:37.895Z"
+  },
+  {
+    "id": 1777927349707,
+    "action": "Username Changed",
+    "actor": "sskint",
+    "details": "Changed username",
+    "date": "2026-05-04T20:42:29.707Z"
+  },
+  {
+    "id": 1777927325288,
+    "action": "Login",
+    "actor": "owner",
+    "details": "User owner logged in",
+    "date": "2026-05-04T20:42:05.288Z"
+  },
+  {
+    "id": 1777926175674,
+    "action": "Login",
+    "actor": "owner",
+    "details": "User owner logged in",
+    "date": "2026-05-04T20:22:55.674Z"
+  },
+  {
+    "id": 1777924906991,
+    "action": "Script Verified",
+    "actor": "evil_larry",
+    "details": "\"skibidi larry\" verified",
+    "date": "2026-05-04T20:01:46.991Z"
+  },
+  {
+    "id": 1777924881494,
+    "action": "Script Submitted",
+    "actor": "evil_larry",
+    "details": "New script \"skibidi larry\" submitted",
+    "date": "2026-05-04T20:01:21.494Z"
+  },
+  {
+    "id": 1777923114776,
+    "action": "Login",
+    "actor": "owner",
+    "details": "User owner logged in",
+    "date": "2026-05-04T19:31:54.776Z"
+  },
+  {
+    "id": 1777922959344,
+    "action": "Login",
+    "actor": "owner",
+    "details": "User owner logged in",
+    "date": "2026-05-04T19:29:19.344Z"
+  },
+  {
+    "id": 1777922771844,
+    "action": "Script Verified",
+    "actor": "owner",
+    "details": "\"Blox Fruits Auto Farm Hub\" verified",
+    "date": "2026-05-04T19:26:11.844Z"
+  },
+  {
+    "id": 1777922759538,
+    "action": "Script Unverified",
+    "actor": "owner",
+    "details": "\"Blox Fruits Auto Farm Hub\" unverified",
+    "date": "2026-05-04T19:25:59.538Z"
+  },
+  {
+    "id": 1777922468444,
+    "action": "Registration",
+    "actor": "system",
+    "details": "New user registered: testuser",
+    "date": "2026-05-04T19:21:08.444Z"
+  },
+  {
+    "id": 1,
+    "action": "System Initialized",
+    "actor": "system",
+    "details": "Database created",
+    "date": "2026-05-04T19:17:14.769Z"
+  }
+]

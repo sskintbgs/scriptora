@@ -1,0 +1,971 @@
+[
+  {
+    "id": 1,
+    "title": "Nexus New Auto Farm Safe OP",
+    "game": "Blox Fruits",
+    "description": "The best auto farm script for Blox Fruits. Safe, undetected, and keyless. Features auto quest, auto farm levels, fruit sniper, auto raid, teleport, and more. Updated regularly to bypass anti-cheat.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 6,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": true,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Blox-Fruits-Nexus-Auto-Farm-Safe-OP\"))()",
+    "date": "2026-04-28",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara",
+      "Delta"
+    ],
+    "ratings": [
+      {
+        "userId": 1,
+        "rating": 5
+      },
+      {
+        "userId": 2,
+        "rating": 4
+      },
+      {
+        "userId": 3,
+        "rating": 5
+      }
+    ],
+    "comments": []
+  },
+  {
+    "id": 2,
+    "title": "Polo MVS Script OP (No Keys) - Auto shoot",
+    "game": "Murderers VS Sheriffs DUELS",
+    "description": "Overpowered MVS script with auto shoot, aimbot, triggerbot, ESP, and silent aim. Completely keyless and free. Works on all executors.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/MVS-Polo-Script-OP-Auto-shoot\"))()",
+    "date": "2026-04-28",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Delta",
+      "Solara"
+    ],
+    "ratings": [
+      {
+        "userId": 1,
+        "rating": 4
+      }
+    ],
+    "comments": []
+  },
+  {
+    "id": 3,
+    "title": "SLIME RNG OP Script (Keyless) - Auto Roll, Auto Area",
+    "game": "SLIME RNG",
+    "description": "Full featured Slime RNG script with auto roll, auto area progression, fast and smooth performance. Completely keyless. Works on most executors.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Slime-RNG-OP-Script-Keyless-Auto-Roll\"))()",
+    "date": "2026-05-01",
+    "executors": [
+      "Potassium",
+      "Solara",
+      "Delta"
+    ],
+    "ratings": [
+      {
+        "userId": 2,
+        "rating": 5
+      }
+    ],
+    "comments": []
+  },
+  {
+    "id": 4,
+    "title": "Eclipse Hub AOTR Auto Farm Script",
+    "game": "Attack on Titan Revolution",
+    "description": "Eclipse Hub for Attack on Titan Revolution. Full auto farm, auto quest, titan ESP, and more. Free and keyless. Updated for latest patch.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/AOTR-Eclipse-Hub-Auto-Farm\"))()",
+    "date": "2026-04-30",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 5,
+    "title": "Chill HUB V0.9 TSB Script",
+    "game": "The Strongest Battlegrounds",
+    "description": "Chill HUB for The Strongest Battlegrounds. Auto parry, combo assist, ESP, hitbox expander. Free and regularly updated.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/TSB-Chill-HUB-V09\"))()",
+    "date": "2026-04-30",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Delta",
+      "Solara"
+    ],
+    "ratings": [
+      {
+        "userId": 1,
+        "rating": 5
+      },
+      {
+        "userId": 2,
+        "rating": 4
+      }
+    ],
+    "comments": []
+  },
+  {
+    "id": 6,
+    "title": "Vexro Emote Player 40K+ Emotes",
+    "game": "Universal",
+    "description": "V2.8 Universal emote player with 40,000+ emotes. Works on all games. Keyless, free, and frequently updated.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": true,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Universal-Script-Vexro-Emotes-69231\"))()",
+    "date": "2025-11-23",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara",
+      "Delta"
+    ],
+    "ratings": [
+      {
+        "userId": 1,
+        "rating": 5
+      },
+      {
+        "userId": 2,
+        "rating": 4
+      }
+    ],
+    "comments": [
+      {
+        "id": 2,
+        "userId": 1,
+        "username": "admin",
+        "text": "Works great, one of the best emote hubs.",
+        "date": "2025-12-01"
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "title": "Best Script for Baddies Hitbox Expander And Freeze Trade",
+    "game": "Baddies",
+    "description": "The ultimate Baddies script with hitbox expander, freeze trade, auto farm, ESP and more. Completely free and keyless.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Baddies-Hitbox-Expander-Freeze-Trade\"))()",
+    "date": "2026-03-04",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara",
+      "Delta"
+    ],
+    "ratings": [
+      {
+        "userId": 1,
+        "rating": 4
+      }
+    ],
+    "comments": []
+  },
+  {
+    "id": 8,
+    "title": "Driving Empire Best Script No Key",
+    "game": "Driving Empire",
+    "description": "Full featured Driving Empire script. Auto money farm, car spawner, speed hack, teleport, and more. No key required.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Driving-Empire-Best-Script-No-Key\"))()",
+    "date": "2026-03-04",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Delta"
+    ],
+    "ratings": [
+      {
+        "userId": 2,
+        "rating": 5
+      }
+    ],
+    "comments": []
+  },
+  {
+    "id": 9,
+    "title": "Hypershot Aim and Hitbox Expander Script",
+    "game": "Hypershot",
+    "description": "Premium aimbot and hitbox expander for Hypershot. Highly configurable with smooth aim, FOV settings, and triggerbot. Requires key.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": true,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Hypershot-Aim-Hitbox-Expander\"))()",
+    "date": "2026-04-04",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara"
+    ],
+    "ratings": [
+      {
+        "userId": 1,
+        "rating": 5
+      },
+      {
+        "userId": 2,
+        "rating": 5
+      }
+    ],
+    "comments": [
+      {
+        "id": 3,
+        "userId": 2,
+        "username": "XenoDev",
+        "text": "Best aim script for Hypershot, the key system is fast.",
+        "date": "2026-04-05"
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "title": "Freeze Trade Script New UI 2026",
+    "game": "Steal a Brainrot",
+    "description": "Updated freeze trade script with a brand new modern UI. Auto steal, freeze, and lock features. Free and keyless.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Steal-Brainrot-Freeze-Trade-2026\"))()",
+    "date": "2026-05-04",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Delta"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 11,
+    "title": "Void Hub Sniper Duels Script 2026 - Aimbot, Triggerbot",
+    "game": "SNIPER DUELS",
+    "description": "Void Hub for Sniper Duels with aimbot, triggerbot, ESP, wallbang, and no recoil. Requires key system.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": true,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Sniper-Duels-Void-Hub-2026\"))()",
+    "date": "2026-05-03",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 12,
+    "title": "Xynapse Blox Fruits Script (No Keys) - Auto Farm Levels",
+    "game": "Blox Fruits",
+    "description": "Xynapse hub for Blox Fruits. Auto farm levels, auto quest, fruit finder, devil fruit sniper, and more. Completely keyless.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Blox-Fruits-Xynapse-Auto-Farm\"))()",
+    "date": "2026-05-04",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara",
+      "Delta"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 13,
+    "title": "ayyware",
+    "game": "Universal",
+    "description": "Premium universal script hub with advanced features including aimbot, ESP, speed hacks, fly, noclip, and anti-ban bypass. Paid script with extensive features.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": true,
+    "isUniversal": true,
+    "code": "loadstring(game:HttpGet(\"https://raw.githubusercontent.com/ayyware/loader/main/init.lua\"))()",
+    "date": "2026-05-04",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara",
+      "Delta"
+    ],
+    "ratings": [
+      {
+        "userId": 1,
+        "rating": 5
+      }
+    ],
+    "comments": []
+  },
+  {
+    "id": 14,
+    "title": "BloxStrike No Recoil [Open Source]",
+    "game": "BloxStrike",
+    "description": "Open source no recoil script for BloxStrike. Removes all weapon recoil for perfect accuracy. Keyless and lightweight.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/BloxStrike-No-Recoil-Open-Source\"))()",
+    "date": "2026-05-04",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Delta"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 15,
+    "title": "Ultimate Survival Script | Auto Farm | Kill Aura | ESP",
+    "game": "Ultimate Survival",
+    "description": "Complete survival script with auto farm resources, kill aura for mobs, full ESP, auto build shelter, and inventory management. Free and keyless.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Ultimate-Survival-Auto-Farm-Kill-Aura\"))()",
+    "date": "2026-05-04",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara",
+      "Delta"
+    ],
+    "ratings": [
+      {
+        "userId": 1,
+        "rating": 4
+      },
+      {
+        "userId": 2,
+        "rating": 5
+      }
+    ],
+    "comments": []
+  },
+  {
+    "id": 16,
+    "title": "Yorijin The New Best Free Rivals Skin Changer",
+    "game": "Rivals",
+    "description": "The best free skin changer for Rivals. Unlock all skins, preview skins in-game, and save loadouts. Key system but fast checkpoint.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": true,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Rivals-Yorijin-Skin-Changer\"))()",
+    "date": "2026-05-04",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara"
+    ],
+    "ratings": [
+      {
+        "userId": 1,
+        "rating": 5
+      }
+    ],
+    "comments": []
+  },
+  {
+    "id": 17,
+    "title": "Cartels Hub Universal Script (No Keys)",
+    "game": "Universal",
+    "description": "Universal hub script supporting 30+ games. Features aimbot, ESP, speed, fly, noclip, infinite jump and more. Completely keyless.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": true,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Universal-Cartels-Hub-No-Keys\"))()",
+    "date": "2026-04-16",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara",
+      "Delta"
+    ],
+    "ratings": [
+      {
+        "userId": 2,
+        "rating": 4
+      }
+    ],
+    "comments": []
+  },
+  {
+    "id": 18,
+    "title": "Build a Boat Auto Farm",
+    "game": "Build A Boat For Treasure",
+    "description": "Automatic farming script for Build a Boat for Treasure. Auto build, auto collect gold, teleport to treasure, and more.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/BABFT-Auto-Farm\"))()",
+    "date": "2026-05-02",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara",
+      "Delta"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 19,
+    "title": "Escape Zombies Railway Inf Diamonds Script (No Keys)",
+    "game": "Escape Zombies Railway",
+    "description": "Infinite diamonds exploit for Escape Zombies Railway. Auto farm, speed boost, and instant kill zombies. No keys needed.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Escape-Zombies-Railway-Inf-Diamonds\"))()",
+    "date": "2026-05-02",
+    "executors": [
+      "Potassium",
+      "Delta",
+      "Solara"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 20,
+    "title": "Invisible v1 Script Roblox",
+    "game": "Universal",
+    "description": "Make yourself invisible in any Roblox game. Undetectable by other players and anti-cheat. Simple toggle on/off.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": true,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Universal-Invisible-v1\"))()",
+    "date": "2026-05-02",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 21,
+    "title": "OP Hub ZyroYonk 30+ Games Supported",
+    "game": "Universal",
+    "description": "Massive multi-game hub supporting 30+ popular Roblox games. Includes auto farm, ESP, aimbot, teleport and game-specific features for each title. Key system for premium features.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": true,
+    "isUniversal": true,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Universal-OP-Hub-ZyroYonk\"))()",
+    "date": "2026-05-03",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara",
+      "Delta"
+    ],
+    "ratings": [
+      {
+        "userId": 1,
+        "rating": 4
+      }
+    ],
+    "comments": []
+  },
+  {
+    "id": 22,
+    "title": "Zenk Hub Universal",
+    "game": "Universal",
+    "description": "Zenk Hub is a universal script hub with support for multiple games. Clean UI, lightweight, and frequently updated. Features vary by game.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": true,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Universal-Zenk-Hub\"))()",
+    "date": "2026-05-02",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Delta"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 23,
+    "title": "SAB Rift Hub Auto Steal and Auto Lock",
+    "game": "Steal a Brainrot",
+    "description": "Rift Hub for Steal a Brainrot with auto steal, auto lock, freeze trade, and ESP. Key system with quick checkpoint.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": true,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/SAB-Rift-Hub-Auto-Steal\"))()",
+    "date": "2026-05-03",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 24,
+    "title": "Wheelie District v1 Auto Farm Script Keyless",
+    "game": "Wheelie District",
+    "description": "Auto farm script for Wheelie District. Automatic wheelie farming, coin collection, and upgrade automation. Completely keyless.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Wheelie-District-Auto-Farm-Keyless\"))()",
+    "date": "2026-05-03",
+    "executors": [
+      "Potassium",
+      "Delta",
+      "Solara",
+      "Xeno"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 25,
+    "title": "Aimbot For Every Shooter Game Script Keyless",
+    "game": "Universal",
+    "description": "Universal aimbot script that works on every shooter game in Roblox. Configurable FOV, smooth aim, and silent aim options. No key needed.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": true,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Universal-Aimbot-Shooter-Games-Keyless\"))()",
+    "date": "2026-05-03",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara",
+      "Delta"
+    ],
+    "ratings": [
+      {
+        "userId": 1,
+        "rating": 4
+      }
+    ],
+    "comments": []
+  },
+  {
+    "id": 26,
+    "title": "Erme Universal (Keyless)",
+    "game": "Universal",
+    "description": "Lightweight universal script with basic features like speed, fly, noclip, infinite jump and ESP. Works on most games. Completely free.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": true,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Universal-Erme-Keyless\"))()",
+    "date": "2026-05-04",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Delta"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 27,
+    "title": "Fly Up Script Keyless - Auto Fly",
+    "game": "Fly Up",
+    "description": "Auto fly script for Fly Up game. Automatically flies upward, collects rewards, and avoids obstacles. No keys required.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Fly-Up-Auto-Fly-Keyless\"))()",
+    "date": "2026-05-02",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 28,
+    "title": "Makeup Store Simulator Inf Claim Script",
+    "game": "Makeup Store Simulator",
+    "description": "Infinite claim exploit for Makeup Store Simulator. Auto claim all items, infinite money, and unlock everything. No keys.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Makeup-Store-Simulator-Inf-Claim\"))()",
+    "date": "2026-05-02",
+    "executors": [
+      "Potassium",
+      "Delta",
+      "Xeno"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 29,
+    "title": "BEST AR2 SCRIPT - VEH FLY, WALLBANG, BULLET MANIP",
+    "game": "Apocalypse Rising 2",
+    "description": "The ultimate AR2 script with vehicle fly, wallbang, bullet manipulation, bring loot, ESP, and aimbot. Key system for anti-leech.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": true,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/AR2-Best-Script-VehFly-Wallbang\"))()",
+    "date": "2026-05-03",
+    "executors": [
+      "Potassium",
+      "Xeno"
+    ],
+    "ratings": [
+      {
+        "userId": 1,
+        "rating": 5
+      }
+    ],
+    "comments": []
+  },
+  {
+    "id": 30,
+    "title": "morfOS Universal Hub",
+    "game": "Universal",
+    "description": "morfOS is a sleek universal hub with modern UI. Supports multiple games with game-specific features. Auto-updates and lightweight.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": true,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Universal-morfOS\"))()",
+    "date": "2026-05-04",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara",
+      "Delta"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 31,
+    "title": "Bridger Western Level Farm and Insta Kill",
+    "game": "Bridger Western",
+    "description": "Level farm and instant kill script for Bridger Western. Auto farm XP, instant kill NPCs, and teleport features. Free to use.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Bridger-Western-Level-Farm-InstaKill\"))()",
+    "date": "2026-04-30",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Delta"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 32,
+    "title": "Survive The Apocalypse Script",
+    "game": "Survive The Apocalypse",
+    "description": "Full survival script with auto gather, auto build, zombie ESP, auto craft weapons, and base defense automation. Key system but free to use.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": true,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Survive-Apocalypse-Script\"))()",
+    "date": "2026-05-02",
+    "executors": [
+      "Potassium",
+      "Solara",
+      "Delta"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 33,
+    "title": "XeRivals Script (Destroy Your Enemies)",
+    "game": "Rivals",
+    "description": "Powerful Rivals script with aimbot, triggerbot, ESP, no recoil, rapid fire, and movement enhancements. Keyless and free.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Rivals-XeRivals-Script\"))()",
+    "date": "2026-05-04",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 34,
+    "title": "BOBER | FLY 2.0 for MM2",
+    "game": "Murder Mystery 2",
+    "description": "Updated fly script for Murder Mystery 2. Smooth flying with speed control, anti-detection, and hotkey toggle.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/MM2-BOBER-FLY-2-0\"))()",
+    "date": "2026-05-04",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Delta"
+    ],
+    "ratings": [],
+    "comments": []
+  },
+  {
+    "id": 35,
+    "title": "Lineage Piece Auto Farm Script (No Keys)",
+    "game": "Lineage Piece",
+    "description": "Auto farm script for Lineage Piece. Auto quest, auto fight, fruit farm, and boss farm. Completely keyless.",
+    "authorId": 3,
+    "author": "sskint",
+    "views": 0,
+    "likes": 0,
+    "likedBy": [],
+    "status": "working",
+    "verified": true,
+    "key": false,
+    "isUniversal": false,
+    "code": "loadstring(game:HttpGet(\"https://rawscripts.net/raw/Lineage-Piece-Auto-Farm-No-Keys\"))()",
+    "date": "2026-05-04",
+    "executors": [
+      "Potassium",
+      "Xeno",
+      "Solara",
+      "Delta"
+    ],
+    "ratings": [],
+    "comments": []
+  }
+]
