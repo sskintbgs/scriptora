@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <meta name="description" content="Scriptora — Browse, upload, and share verified Roblox scripts. The #1 trusted script hub." />
+    <meta name="keywords" content="Scriptora, Roblox scripts, script hub, Blox Fruits, script executor, free scripts" />
+    <meta name="author" content="Scriptora" />
+    <meta name="theme-color" content="#818cf8" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:title" content="Scriptora — #1 Script Hub" />
+    <meta property="og:description" content="Browse verified scripts for every Roblox game. Upload and share with the community." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Scriptora" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Scriptora — #1 Script Hub" />
+    <meta name="twitter:description" content="Browse verified scripts for Roblox. Upload and share with the community." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href="/" />
+    <title>Scriptora</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run Scriptora.</noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Anti-inspect basic protections
+      document.addEventListener('contextmenu', e => e.preventDefault());
+      document.addEventListener('keydown', e => {
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'C', 'J'].includes(e.key)) || (e.ctrlKey && e.key === 'U')) {
+          e.preventDefault();
+        }
+      });
+      // Anti-debugger loop
+      setInterval(() => {
+        const start = performance.now();
+        debugger;
+        if (performance.now() - start > 100) {
+          document.body.innerHTML = 'Developer tools detected.';
+        }
+      }, 1000);
+    </script>
+  </body>
+</html>
