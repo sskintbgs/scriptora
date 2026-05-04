@@ -855,9 +855,15 @@ setInterval(() => {
   console.log(`[CLEANUP] IPs: ${ipTracker.size}, Clearances: ${clearanceTokens.size}, Online: ${onlineUsers.size}`);
 }, 300000);
 
-// Server-side 404 catch-all for unknown API routes
-app.use('/api/{*path}', (req, res) => {
-  res.status(404).json({ error: 'Endpoint not found' });
+// Serve React Frontend (dist folder built by Vite)
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// Catch-all: Send non-API requests to React app, but return 404 for missing API routes
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'Endpoint not found' });
+  }
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // ============================================================
