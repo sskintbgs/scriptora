@@ -8,10 +8,16 @@ const connectDB = async () => {
       console.warn('⚠️ MONGODB_URI is not defined in .env! Cannot connect to database.');
       return;
     }
-    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('📡 Attempting to connect to MongoDB...');
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000 // Stop trying after 5 seconds
+    });
     console.log('✅ MongoDB Connected successfully.');
   } catch (error) {
-    console.error('❌ MongoDB Connection Error:', error.message);
+    console.error('*****************************************');
+    console.error('❌ DATABASE CONNECTION ERROR!');
+    console.error('Reason:', error.message);
+    console.error('*****************************************');
     process.exit(1);
   }
 };
