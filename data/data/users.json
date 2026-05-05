@@ -1,0 +1,79 @@
+[
+  {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@xenonet.dev",
+    "role": "user",
+    "warnings": 0,
+    "banned": false,
+    "createdAt": "2026-05-04T19:17:14.766Z",
+    "password": "$2b$10$fSVPk/Z9g.bLC.m0Usf1MuG.zLifHU9IJTMQ39FAEHrL7vLfTwmiO"
+  },
+  {
+    "id": 2,
+    "username": "XenoDev",
+    "email": "xeno@xenonet.dev",
+    "role": "user",
+    "warnings": 0,
+    "banned": false,
+    "createdAt": "2026-05-04T19:17:14.767Z",
+    "password": "$2b$10$tyll3Kiyi/dN6JI7YVzSMuHbqKdbW7vK7BdPtPBURWLLjzXQoMey."
+  },
+  {
+    "id": 3,
+    "username": "sskint",
+    "email": "jnnnn918@gmail.com",
+    "role": "owner",
+    "warnings": 0,
+    "banned": false,
+    "createdAt": "2026-05-04T19:17:14.767Z",
+    "password": "$2b$10$r/NETq43Bu3HSrF0vdj46u90CjGThMkqQRNR7D5ee/q04.6RSW1He",
+    "following": [
+      1777931109806
+    ],
+    "bio": "balls",
+    "avatar": "https://rscripts.net/_next/image?url=%2Fassets%2Favatars%2F67fd391d47386b4dd27801f1_1744649547118_wZ64BEZ4yZ.webp&w=128&q=75"
+  },
+  {
+    "id": 1777922468443,
+    "username": "testuser",
+    "email": "test@example.com",
+    "role": "user",
+    "warnings": 0,
+    "banned": false,
+    "createdAt": "2026-05-04T19:21:08.443Z",
+    "password": "$2b$10$Nu7IOkzhXt7QZH9yVO51tePvUXoYq3UesjGfKsoRuoSUfpXsCI6nW"
+  },
+  {
+    "id": 1777931109806,
+    "username": "gff",
+    "email": "gg@gmail.com",
+    "role": "user",
+    "warnings": 0,
+    "banned": false,
+    "createdAt": "2026-05-04T21:45:09.806Z",
+    "password": "$2b$10$KFkcJgHuuAbkttEbL0K2K.AU9Nebw4cZVIe7Iw20YeoU9hWbaxeqe",
+    "badges": [
+      "trusted",
+      "developer",
+      "verified",
+      "staff",
+      "contributor",
+      "vip",
+      "og",
+      "friend",
+      "supporter"
+    ],
+    "followers": [
+      3
+    ],
+    "repLog": [
+      {
+        "fromId": 3,
+        "type": "up",
+        "date": "2026-05-04T22:20:11.053Z"
+      }
+    ],
+    "reputation": 1
+  }
+]
