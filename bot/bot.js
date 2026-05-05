@@ -92,7 +92,7 @@ export async function startBot() {
   console.log('[Bot] Attempting to login to Discord...');
   try {
     // Add a race condition to timeout if login takes > 30s
-    const loginPromise = client.login(process.env.DISCORD_TOKEN);
+    const loginPromise = client.login(token);
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Login timed out after 30 seconds')), 30_000)
     );
