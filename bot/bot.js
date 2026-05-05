@@ -77,8 +77,14 @@ export async function startBot() {
     console.log(`[Bot] DNS Lookup successful: ${lookup.address}`);
     
     const fetchRes = await fetch('https://discord.com/api/v10/gateway');
-    const fetchJson = await fetchRes.json();
-    console.log(`[Bot] API Gateway reachability: ${fetchRes.status} (URL: ${fetchJson.url})`);
+    const text = await fetchRes.text();
+    try {
+      const json = JSON.parse(text);
+      console.log(`[Bot] API Gateway reachability: ${fetchRes.status} (URL: ${json.url})`);
+    } catch {
+      console.error(`[Bot] API Gateway returned NON-JSON (Status: ${fetchRes.status})`);
+      console.log(`[Bot Debug] First 200 chars: ${text.substring(0, 200)}`);
+    }
   } catch (err) {
     console.error(`[Bot] Network test FAILED: ${err.message}`);
   }
