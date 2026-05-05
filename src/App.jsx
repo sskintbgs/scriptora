@@ -18,6 +18,7 @@ import Profile from './pages/Profile';
 import Contact from './pages/Contact';
 import Notifications from './pages/Notifications';
 import { Login, Register } from './pages/Auth';
+import BotDashboard from './pages/BotDashboard';
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/u/:username" element={<Profile />} />
               <Route path="/@:username" element={<Profile />} />
+              <Route path="/bot" element={<BotDashboard />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Terminal, Upload, Shield, Code, User, LogOut, TrendingUp, Menu, X, Cpu, Download, MessageSquare, Bell } from 'lucide-react';
+import { Terminal, Upload, Shield, Code, User, LogOut, TrendingUp, Menu, X, Cpu, Download, MessageSquare, Bell, Bot } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
@@ -40,6 +40,7 @@ const Navbar = () => {
     ...(user ? [{ to: '/contact', label: 'Contact', icon: <MessageSquare size={18} /> }] : []),
     ...((user?.role === 'admin' || user?.role === 'owner' || user?.role === 'support') ? [{ to: '/admin', label: 'Admin', icon: <Shield size={18} /> }] : []),
     ...((user?.role === 'owner' || user?.role === 'admin') ? [{ to: '/owner', label: 'Panel', icon: <Shield size={18} /> }] : []),
+    ...((user?.role === 'owner' || user?.role === 'admin') ? [{ to: '/bot', label: 'Bot', icon: <Bot size={18} /> }] : []),
   ];
 
   return (
@@ -60,6 +61,10 @@ const Navbar = () => {
                 {link.icon} {link.label}
               </Link>
             ))}
+            <a href="https://discord.gg/DhZwz3fzbD" target="_blank" rel="noopener noreferrer" className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <svg width="16" height="12" viewBox="0 0 71 55" fill="currentColor"><path d="M60.1 4.9A58.5 58.5 0 0045.4.2a.2.2 0 00-.2.1 40.8 40.8 0 00-1.8 3.7 54 54 0 00-16.2 0A37.3 37.3 0 0025.4.3a.2.2 0 00-.2-.1A58.4 58.4 0 0010.5 4.9a.2.2 0 00-.1.1C1.5 18.7-.9 32 .3 45.2v.1a58.8 58.8 0 0017.9 9 .2.2 0 00.3-.1 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.8 38.8 0 01-5.5-2.6.2.2 0 010-.4 30 30 0 001.1-.9.2.2 0 01.2 0c11.5 5.3 24 5.3 35.4 0a.2.2 0 01.2 0l1.1.9a.2.2 0 010 .4 36.4 36.4 0 01-5.5 2.6.2.2 0 00-.1.3 47.2 47.2 0 003.6 5.9.2.2 0 00.3.1 58.6 58.6 0 0018-9v-.1c1.4-15-2.3-28-9.8-39.6a.2.2 0 00-.1-.1zM23.7 37.1c-3.4 0-6.2-3.1-6.2-7s2.7-7 6.2-7 6.3 3.2 6.2 7-2.8 7-6.2 7zm22.9 0c-3.4 0-6.2-3.1-6.2-7s2.7-7 6.2-7 6.3 3.2 6.2 7-2.8 7-6.2 7z"/></svg>
+              Discord
+            </a>
 
             {user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '16px' }}>
@@ -119,6 +124,10 @@ const Navbar = () => {
                     {link.icon} {link.label}
                   </Link>
                 ))}
+                <a href="https://discord.gg/DhZwz3fzbD" target="_blank" rel="noopener noreferrer" className="mobile-nav-link" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="18" height="14" viewBox="0 0 71 55" fill="currentColor"><path d="M60.1 4.9A58.5 58.5 0 0045.4.2a.2.2 0 00-.2.1 40.8 40.8 0 00-1.8 3.7 54 54 0 00-16.2 0A37.3 37.3 0 0025.4.3a.2.2 0 00-.2-.1A58.4 58.4 0 0010.5 4.9a.2.2 0 00-.1.1C1.5 18.7-.9 32 .3 45.2v.1a58.8 58.8 0 0017.9 9 .2.2 0 00.3-.1 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.8 38.8 0 01-5.5-2.6.2.2 0 010-.4 30 30 0 001.1-.9.2.2 0 01.2 0c11.5 5.3 24 5.3 35.4 0a.2.2 0 01.2 0l1.1.9a.2.2 0 010 .4 36.4 36.4 0 01-5.5 2.6.2.2 0 00-.1.3 47.2 47.2 0 003.6 5.9.2.2 0 00.3.1 58.6 58.6 0 0018-9v-.1c1.4-15-2.3-28-9.8-39.6a.2.2 0 00-.1-.1zM23.7 37.1c-3.4 0-6.2-3.1-6.2-7s2.7-7 6.2-7 6.3 3.2 6.2 7-2.8 7-6.2 7zm22.9 0c-3.4 0-6.2-3.1-6.2-7s2.7-7 6.2-7 6.3 3.2 6.2 7-2.8 7-6.2 7z"/></svg>
+                  Discord
+                </a>
               </div>
 
               <div className="mobile-drawer-footer">
