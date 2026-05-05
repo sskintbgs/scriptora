@@ -1,4 +1,6 @@
 import express from 'express';
+import dotenv from 'dotenv';
+dotenv.config();
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -565,6 +567,7 @@ app.listen(PORT, '0.0.0.0', async () => {
 
   // Start Discord bot alongside the server
   try {
+    console.log('[Server] Calling startBot()...');
     await startBot();
     console.log('🤖 Discord bot started successfully alongside the server.');
   } catch (err) {
