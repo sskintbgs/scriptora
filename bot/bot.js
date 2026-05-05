@@ -9,10 +9,13 @@ const __dirname = path.dirname(__filename);
 let botClient = null;
 
 export async function startBot() {
+  console.log('[Bot] Initializing startBot...');
   if (!process.env.DISCORD_TOKEN) {
     console.log('⚠️  DISCORD_TOKEN not set — bot will not start.');
     return;
   }
+  const token = process.env.DISCORD_TOKEN;
+  console.log(`[Bot] Token found (length: ${token.length}, prefix: ${token.substring(0, 5)}...${token.substring(token.length - 5)})`);
 
   const client = new Client({
     intents: [
@@ -31,6 +34,7 @@ export async function startBot() {
   client.cooldowns = new Collection();
 
   // Load commands
+  console.log('[Bot] Loading commands...');
   const commandFolders = readdirSync(path.join(__dirname, 'commands'));
   for (const folder of commandFolders) {
     const files = readdirSync(path.join(__dirname, 'commands', folder)).filter(f => f.endsWith('.js'));
@@ -43,8 +47,10 @@ export async function startBot() {
       }
     }
   }
+  console.log(`[Bot] Loaded ${client.commands.size} commands.`);
 
   // Load events
+  console.log('[Bot] Loading events...');
   const eventFiles = readdirSync(path.join(__dirname, 'events')).filter(f => f.endsWith('.js'));
   for (const file of eventFiles) {
     try {
@@ -58,8 +64,17 @@ export async function startBot() {
       console.error(`[Bot] Failed to load event ${file}:`, e.message);
     }
   }
+  console.log(`[Bot] Loaded ${eventFiles.length} events.`);
 
-  await client.login(process.env.DISCORD_TOKEN);
+  console.log('[Bot] Attempting to login to Discord...');
+  try {
+    await client.login(process.env.DISCORD_TOKEN);
+    console.log('[Bot] Successfully logged in to Discord.');
+  } catch (err) {
+    console.error('[Bot] Login failed:', err.message);
+    throw err;
+  }
+  
   botClient = client;
   return client;
 }
