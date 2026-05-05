@@ -1,0 +1,133 @@
+{
+  "OWNER_ID": "845606993054269440",
+  "OWNER_DISCORD_IDS": [
+    "845606993054269440"
+  ],
+  "WEBSITE_URL": "https://scriptora-mh3b.onrender.com",
+  "API_URL": "https://scriptora-mh3b.onrender.com",
+  "COLOR": 8388736,
+  "COLOR_ERROR": 15158332,
+  "COLOR_SUCCESS": 5763719,
+  "roles": {
+    "OG_MEMBER": "OG Member",
+    "OG_PLUS": "Og+ member",
+    "STAFF": "Staff",
+    "TRIAL_SUPPORT": "Trial Support",
+    "SUPPORT": "Support",
+    "MODERATOR": "Moderator",
+    "SENIOR_MOD": "Senior Moderator",
+    "HEAD_MOD": "Head Moderator",
+    "JUNIOR_OP": "Junior Operator",
+    "OPERATOR": "Operator",
+    "HEAD_OP": "Head Operator",
+    "ADMIN": "Admin",
+    "OG__MEMBER": "OG+ Member",
+    "SENIOR_MODERATOR": "Senior Moderator",
+    "HEAD_MODERATOR": "Head Moderator",
+    "JUNIOR_OPERATOR": "Junior Operator",
+    "HEAD_OPERATOR": "Head Operator"
+  },
+  "permissions": {
+    "kick": [
+      "Moderator",
+      "Senior Moderator",
+      "Head Moderator",
+      "Junior Operator",
+      "Operator",
+      "Head Operator",
+      "Admin"
+    ],
+    "ban": [
+      "Head Moderator",
+      "Junior Operator",
+      "Operator",
+      "Head Operator",
+      "Admin"
+    ],
+    "warn": [
+      "Support",
+      "Trial Support",
+      "Moderator",
+      "Senior Moderator",
+      "Head Moderator",
+      "Junior Operator",
+      "Operator",
+      "Head Operator",
+      "Admin"
+    ],
+    "mute": [
+      "Moderator",
+      "Senior Moderator",
+      "Head Moderator",
+      "Junior Operator",
+      "Operator",
+      "Head Operator",
+      "Admin"
+    ],
+    "manage_tickets": [
+      "Support",
+      "Trial Support",
+      "Moderator",
+      "Senior Moderator",
+      "Head Moderator",
+      "Junior Operator",
+      "Operator",
+      "Head Operator",
+      "Admin"
+    ],
+    "config": [
+      "Head Operator",
+      "Admin"
+    ],
+    "reaction_roles": [
+      "Operator",
+      "Head Operator",
+      "Admin"
+    ]
+  },
+  "stat_channels": {
+    "members": "1501204299118678206",
+    "scripts": "1501204344102584330",
+    "online": "1501204373253001307"
+  },
+  "channels": {
+    "welcome": "1501203050038169721",
+    "logs": "1501235078242631790",
+    "reaction_roles": null,
+    "general": "1501202821226299402",
+    "roles": "1501235163722682368",
+    "rules": "1501203089506701424"
+  },
+  "reaction_roles": [
+    {
+      "messageId": "1501237187512107198",
+      "roleId": "1501206586105004164",
+      "emoji": "✅",
+      "label": "VERIFY NOW"
+    },
+    {
+      "messageId": "1501238625067733142",
+      "roleId": "1501206586105004164",
+      "emoji": null,
+      "label": "VERIFY NOW"
+    }
+  ],
+  "configured": true,
+  "lastRRMessageId": "1501238625067733142",
+  "lastRRChannelId": "1501219266853212312",
+  "DISCORD_INVITE": "https://discord.gg/Z66P9agVgQ",
+  "roleIds": {
+    "OG Member": "1501240303670263809",
+    "OG+ Member": "1501240306530517143",
+    "Staff": "1501240308724142181",
+    "Trial Support": "1501240310846717984",
+    "Support": "1501208540071723190",
+    "Moderator": "1501209143468625960",
+    "Senior Moderator": "1501209820299002038",
+    "Head Moderator": "1501210295883010058",
+    "Junior Operator": "1501240313207849121",
+    "Operator": "1501211579490762814",
+    "Head Operator": "1501240315229765722",
+    "Admin": "1501240317196632084"
+  }
+}
