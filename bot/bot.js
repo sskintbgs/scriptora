@@ -14,7 +14,7 @@ export async function startBot() {
     console.log('⚠️  DISCORD_TOKEN not set — bot will not start.');
     return;
   }
-  const token = process.env.DISCORD_TOKEN;
+  const token = process.env.DISCORD_TOKEN.trim();
   console.log(`[Bot] Token found (length: ${token.length}, prefix: ${token.substring(0, 5)}...${token.substring(token.length - 5)})`);
 
   const client = new Client({
@@ -66,9 +66,26 @@ export async function startBot() {
   }
   console.log(`[Bot] Loaded ${eventFiles.length} events.`);
 
+  // Loading events
+  // ... (existing code)
+
+  // ── Network Connectivity Test ───────────────────────────────
+  console.log('[Bot] Running network connectivity test...');
+  try {
+    const dns = await import('node:dns/promises');
+    const lookup = await dns.lookup('gateway.discord.gg');
+    console.log(`[Bot] DNS Lookup successful: ${lookup.address}`);
+    
+    const fetchRes = await fetch('https://discord.com/api/v10/gateway');
+    const fetchJson = await fetchRes.json();
+    console.log(`[Bot] API Gateway reachability: ${fetchRes.status} (URL: ${fetchJson.url})`);
+  } catch (err) {
+    console.error(`[Bot] Network test FAILED: ${err.message}`);
+  }
+
   // Debugging gateway connection
   client.on('debug', (m) => {
-    if (m.includes('heartbeat') || m.includes('Latency')) return; // Ignore noisy heartbeat logs
+    if (m.includes('heartbeat') || m.includes('Latency')) return;
     console.log(`[Bot Debug] ${m}`);
   });
 
