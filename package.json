@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "server": "node server.js",
+    "server": "node server-mongo.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -15,11 +15,13 @@
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.4.1",
     "framer-motion": "^12.38.0",
     "helmet": "^8.1.0",
     "lucide-react": "^1.14.0",
+    "mongoose": "^9.6.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-hot-toast": "^2.6.0",
