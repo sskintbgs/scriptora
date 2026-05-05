@@ -87,6 +87,23 @@ function signToken(data) { return crypto.createHmac('sha256', SERVER_SECRET).upd
 const modelsMap = { users: User, scripts: Script, logs: Log, tickets: Ticket, transcripts: Transcript, notifications: Notification };
 
 // ============================================================
+//  HEALTH CHECK  (keep-alive ping target)
+// ============================================================
+app.get('/api/health', (req, res) => {
+  const uptime = process.uptime();
+  const d = Math.floor(uptime / 86400);
+  const h = Math.floor((uptime % 86400) / 3600);
+  const m = Math.floor((uptime % 3600) / 60);
+  const s = Math.floor(uptime % 60);
+  res.json({
+    status:  'ok',
+    uptime:  `${d}d ${h}h ${m}m ${s}s`,
+    memory:  `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
+    time:    new Date().toISOString(),
+  });
+});
+
+// ============================================================
 //  DATABASE API ENDPOINTS (MONGODB)
 // ============================================================
 
@@ -554,4 +571,26 @@ app.listen(PORT, '0.0.0.0', async () => {
     console.error('⚠️  Discord bot failed to start:', err.message);
     console.log('   Server will continue running without the bot.');
   }
+
+  // ── Render Keep-Alive Self-Ping ──────────────────────────────
+  // Render free tier spins down after 15 min of inactivity.
+  // This pings our own /api/health every 14 min to stay awake.
+  const SELF_URL = process.env.RENDER_EXTERNAL_URL
+    ? `${process.env.RENDER_EXTERNAL_URL}/api/health`
+    : `http://localhost:${PORT}/api/health`;
+
+  const keepAlive = () => {
+    fetch(SELF_URL)
+      .then(r => console.log(`💓 Keep-alive ping → ${r.status} ${new Date().toISOString()}`))
+      .catch(e => console.warn(`💔 Keep-alive failed: ${e.message}`));
+  };
+
+  // Start pinging after 1 min, then every 14 min
+  setTimeout(() => {
+    keepAlive();
+    setInterval(keepAlive, 14 * 60 * 1000);
+  }, 60_000);
+
+  console.log(`🔁 Keep-alive self-ping enabled → ${SELF_URL} (every 14 min)`);
 });
+
