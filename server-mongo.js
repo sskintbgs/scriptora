@@ -13,6 +13,9 @@ import { fileURLToPath } from 'url';
 // --- MONGODB IMPORTS ---
 import { connectDB, User, Script, Ticket, Notification, Log, Transcript, Visitor } from './src/db.js';
 
+// --- DISCORD BOT ---
+import { startBot } from './bot/bot.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -461,12 +464,94 @@ setInterval(() => {
   });
 }, 300000);
 
+// ============================================================
+//  BOT DASHBOARD API
+// ============================================================
+import { readFileSync as _rfs, writeFileSync as _wfs, existsSync as _exi } from 'fs';
+import { getBotClient } from './bot/bot.js';
+
+const BOT_CONFIG_PATH = path.join(__dirname, 'bot', 'config.json');
+const BOT_ECO_PATH    = path.join(__dirname, 'bot', 'economy.json');
+
+function readBotConfig() {
+  try { return JSON.parse(_rfs(BOT_CONFIG_PATH, 'utf8')); } catch { return {}; }
+}
+function writeBotConfig(data) {
+  _wfs(BOT_CONFIG_PATH, JSON.stringify(data, null, 2));
+}
+function deepMergeCfg(target, source) {
+  const result = { ...target };
+  for (const key of Object.keys(source)) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      result[key] = deepMergeCfg(target[key] || {}, source[key]);
+    } else {
+      result[key] = source[key];
+    }
+  }
+  return result;
+}
+
+app.get('/api/bot/config', (req, res) => {
+  res.json(readBotConfig());
+});
+
+app.post('/api/bot/config', writeLimiter, async (req, res) => {
+  const userId = req.headers['x-user-id'];
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const user = await User.findOne({ id: userId });
+  if (!user || !['admin', 'owner'].includes(user.role)) return res.status(403).json({ error: 'Admin only' });
+  const current = readBotConfig();
+  const updated = deepMergeCfg(current, req.body);
+  writeBotConfig(updated);
+  res.json(updated);
+});
+
+app.get('/api/bot/status', (req, res) => {
+  const botClient = getBotClient();
+  if (!botClient || !botClient.isReady()) return res.json({ online: false });
+  const guild = botClient.guilds.cache.first();
+  res.json({
+    online:   true,
+    tag:      botClient.user.tag,
+    guilds:   botClient.guilds.cache.size,
+    commands: botClient.commands?.size ?? 0,
+    members:  guild?.memberCount ?? 0,
+    uptime:   formatUptime(process.uptime()),
+  });
+});
+
+app.get('/api/bot/economy', (req, res) => {
+  try {
+    const data = _exi(BOT_ECO_PATH) ? JSON.parse(_rfs(BOT_ECO_PATH, 'utf8')) : {};
+    res.json(data);
+  } catch { res.json({}); }
+});
+
+function formatUptime(secs) {
+  const d = Math.floor(secs / 86400);
+  const h = Math.floor((secs % 86400) / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+// ── Serve frontend
 app.use(express.static(path.join(__dirname, 'dist')));
 app.use((req, res) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Endpoint not found' });
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`\n🛡️  Scriptora Server (MongoDB) running on port ${PORT}`);
+
+  // Start Discord bot alongside the server
+  try {
+    await startBot();
+    console.log('🤖 Discord bot started successfully alongside the server.');
+  } catch (err) {
+    console.error('⚠️  Discord bot failed to start:', err.message);
+    console.log('   Server will continue running without the bot.');
+  }
 });
