@@ -20,7 +20,7 @@ const app = express();
 const PORT = process.env.SERVER_PORT || process.env.PORT || 3001;
 
 // Connect to MongoDB
-connectDB();
+await connectDB();
 
 // ============================================================
 //  SECURITY CONFIG
