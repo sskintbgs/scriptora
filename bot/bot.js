@@ -66,9 +66,21 @@ export async function startBot() {
   }
   console.log(`[Bot] Loaded ${eventFiles.length} events.`);
 
+  // Debugging gateway connection
+  client.on('debug', (m) => {
+    if (m.includes('heartbeat') || m.includes('Latency')) return; // Ignore noisy heartbeat logs
+    console.log(`[Bot Debug] ${m}`);
+  });
+
   console.log('[Bot] Attempting to login to Discord...');
   try {
-    await client.login(process.env.DISCORD_TOKEN);
+    // Add a race condition to timeout if login takes > 30s
+    const loginPromise = client.login(process.env.DISCORD_TOKEN);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Login timed out after 30 seconds')), 30_000)
+    );
+
+    await Promise.race([loginPromise, timeoutPromise]);
     console.log('[Bot] Successfully logged in to Discord.');
   } catch (err) {
     console.error('[Bot] Login failed:', err.message);
