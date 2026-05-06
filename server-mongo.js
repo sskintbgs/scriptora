@@ -63,6 +63,18 @@ app.use((req, res, next) => {
 const globalLimiter = rateLimit({ windowMs: 60000, max: 200, standardHeaders: true, legacyHeaders: false, message: { error: 'Rate limited.', blocked: true } });
 app.use(globalLimiter);
 
+// Banned User Middleware
+async function checkBanned(req, res, next) {
+  const { userId } = req.body;
+  if (userId) {
+    const user = await User.findOne({ id: userId });
+    if (user && user.banned) {
+      return res.status(403).json({ error: 'This account has been banned.', banned: true });
+    }
+  }
+  next();
+}
+
 const challengeLimiter = rateLimit({ windowMs: 60000, max: 10, message: { error: 'Too many challenge requests.', blocked: true } });
 const loginLimiter = rateLimit({ windowMs: 15 * 60000, max: 5, message: { error: 'Too many login attempts. Try again later.', blocked: true } });
 const writeLimiter = rateLimit({ windowMs: 60000, max: 30, message: { error: 'Rate limit exceeded.', blocked: true } });
@@ -117,7 +129,7 @@ app.get('/api/db/:collection', async (req, res) => {
   res.json(data);
 });
 
-app.post('/api/db/:collection', writeLimiter, async (req, res) => {
+app.post('/api/db/:collection', writeLimiter, checkBanned, async (req, res) => {
   const { collection } = req.params;
   const Model = modelsMap[collection];
   if (!Model) return res.status(400).json({ error: 'Invalid collection' });
@@ -168,7 +180,7 @@ app.post('/api/heartbeat', async (req, res) => {
   res.json({ online: onlineUsers.size });
 });
 
-app.post('/api/scripts/:id/like', writeLimiter, async (req, res) => {
+app.post('/api/scripts/:id/like', writeLimiter, checkBanned, async (req, res) => {
   const { userId } = req.body;
   if (!userId) return res.status(400).json({ error: 'User ID required' });
   const script = await Script.findOne({ id: req.params.id });
@@ -204,7 +216,20 @@ app.get('/api/profile/:username', async (req, res) => {
   return res.status(404).json({ error: 'User not found' });
 });
 
-app.post('/api/profile/update', writeLimiter, async (req, res) => {
+// --- Delete all scripts by user (admin/owner only) ---
+app.post('/api/admin/delete-all-scripts', writeLimiter, async (req, res) => {
+  const { adminId, targetUserId } = req.body;
+  if (!adminId || !targetUserId) return res.status(400).json({ error: 'Missing fields' });
+  
+  const admin = await User.findOne({ id: adminId });
+  if (!admin || (admin.role !== 'admin' && admin.role !== 'owner')) return res.status(403).json({ error: 'Unauthorized' });
+  
+  const result = await Script.deleteMany({ authorId: targetUserId });
+  console.log(`[ADMIN] ${admin.username} deleted all ${result.deletedCount} scripts by user #${targetUserId}`);
+  res.json({ success: true, deletedCount: result.deletedCount });
+});
+
+app.post('/api/profile/update', writeLimiter, checkBanned, async (req, res) => {
   const { userId, bio, avatar } = req.body;
   if (!userId) return res.status(400).json({ error: 'User ID required' });
   const user = await User.findOne({ id: userId });
@@ -216,7 +241,7 @@ app.post('/api/profile/update', writeLimiter, async (req, res) => {
   res.json(safe);
 });
 
-app.post('/api/profile/avatar', writeLimiter, async (req, res) => {
+app.post('/api/profile/avatar', writeLimiter, checkBanned, async (req, res) => {
   const { userId, avatar } = req.body;
   if (!userId || !avatar) return res.status(400).json({ error: 'Missing fields' });
   const user = await User.findOne({ id: userId });
@@ -437,7 +462,7 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
   const { username, password } = req.body;
   const user = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
   if (!user || !bcrypt.compareSync(password, user.password || '')) return res.status(401).json({ error: 'Invalid password' });
-  if (user.banned) return res.status(403).json({ error: 'Banned' });
+  if (user.banned) return res.status(403).json({ error: 'This account has been banned.' });
   const safe = user.toObject(); delete safe.password;
   res.json(safe);
 });
