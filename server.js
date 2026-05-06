@@ -142,6 +142,19 @@ app.use((req, res, next) => {
 const globalLimiter = rateLimit({ windowMs: 60000, max: 200, standardHeaders: true, legacyHeaders: false, message: { error: 'Rate limited.', blocked: true } });
 app.use(globalLimiter);
 
+// Banned User Middleware
+function checkBanned(req, res, next) {
+  const { userId } = req.body;
+  if (userId) {
+    const users = readDB('users') || [];
+    const user = users.find(u => String(u.id) === String(userId));
+    if (user && user.banned) {
+      return res.status(403).json({ error: 'This account has been banned.', banned: true });
+    }
+  }
+  next();
+}
+
 const challengeLimiter = rateLimit({ windowMs: 60000, max: 10, message: { error: 'Too many challenge requests.', blocked: true } });
 const loginLimiter = rateLimit({ windowMs: 15 * 60000, max: 5, message: { error: 'Too many login attempts. Try again later.', blocked: true } });
 const writeLimiter = rateLimit({ windowMs: 60000, max: 30, message: { error: 'Rate limit exceeded.', blocked: true } });
@@ -202,7 +215,7 @@ app.get('/api/db/:collection', (req, res) => {
 });
 
 // --- Sync: POST save full collection ---
-app.post('/api/db/:collection', writeLimiter, (req, res) => {
+app.post('/api/db/:collection', writeLimiter, checkBanned, (req, res) => {
   const { collection } = req.params;
   if (!DB_FILES[collection]) return res.status(400).json({ error: 'Invalid collection' });
   const data = req.body;
@@ -262,7 +275,7 @@ app.post('/api/heartbeat', (req, res) => {
 });
 
 // --- Like with self-like prevention ---
-app.post('/api/scripts/:id/like', writeLimiter, (req, res) => {
+app.post('/api/scripts/:id/like', writeLimiter, checkBanned, (req, res) => {
   const { userId } = req.body;
   if (!userId) return res.status(400).json({ error: 'User ID required' });
   const scripts = readDB('scripts') || [];
@@ -303,8 +316,31 @@ app.get('/api/profile/:username', (req, res) => {
   return res.status(404).json({ error: 'User not found' });
 });
 
+// --- Delete all scripts by user (admin/owner only) ---
+app.post('/api/admin/delete-all-scripts', writeLimiter, (req, res) => {
+  const { adminId, targetUserId } = req.body;
+  if (!adminId || !targetUserId) return res.status(400).json({ error: 'Missing fields' });
+  
+  const users = readDB('users') || [];
+  const admin = users.find(u => String(u.id) === String(adminId));
+  if (!admin || (admin.role !== 'admin' && admin.role !== 'owner')) return res.status(403).json({ error: 'Unauthorized' });
+  
+  const scripts = readDB('scripts') || [];
+  const initialCount = scripts.length;
+  const filtered = scripts.filter(s => String(s.authorId) !== String(targetUserId));
+  
+  if (filtered.length !== initialCount) {
+    writeDB('scripts', filtered);
+    const deletedCount = initialCount - filtered.length;
+    console.log(`[ADMIN] ${admin.username} deleted all ${deletedCount} scripts by user #${targetUserId}`);
+    return res.json({ success: true, deletedCount });
+  }
+  
+  res.json({ success: true, deletedCount: 0 });
+});
+
 // --- Update user profile (bio, avatar) ---
-app.post('/api/profile/update', writeLimiter, (req, res) => {
+app.post('/api/profile/update', writeLimiter, checkBanned, (req, res) => {
   const { userId, bio, avatar } = req.body;
   if (!userId) return res.status(400).json({ error: 'User ID required' });
   const users = readDB('users') || [];
@@ -319,7 +355,7 @@ app.post('/api/profile/update', writeLimiter, (req, res) => {
 });
 
 // --- Update user avatar (base64) ---
-app.post('/api/profile/avatar', writeLimiter, (req, res) => {
+app.post('/api/profile/avatar', writeLimiter, checkBanned, (req, res) => {
   const { userId, avatar } = req.body;
   if (!userId || !avatar) return res.status(400).json({ error: 'Missing fields' });
   const users = readDB('users') || [];
@@ -757,7 +793,7 @@ app.post('/api/auth/login', loginLimiter, (req, res) => {
   if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
 
   const users = readDB('users') || [];
-  const user = users.find(u => u.username === username);
+  const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
   if (!user) return res.status(401).json({ error: 'User not found' });
   if (user.banned) return res.status(403).json({ error: 'This account has been banned.' });
   if (!user.password) return res.status(500).json({ error: 'Auth error: no password hash' });
