@@ -56,8 +56,23 @@ const Owner = () => {
   const handleBan = async (id) => {
     const target = users.find(u => u.id === id);
     const action = target?.banned ? 'unban' : 'ban';
+    
     if (!window.confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} this user?`)) return;
-    try { await api.banUser(id, user.username); toast.success(`User ${action}ned`); refreshData(); }
+    
+    try { 
+      await api.banUser(id, user.username); 
+      
+      // If banning (not unbanning), ask to delete all posts
+      if (!target?.banned) {
+        if (window.confirm(`User "${target?.username}" has been banned. Do you also want to DELETE ALL their scripts?`)) {
+          const deletedCount = await api.deleteAllUserScripts(user.id, id);
+          toast.success(`Deleted ${deletedCount} scripts`);
+        }
+      }
+      
+      toast.success(`User ${action}ned`); 
+      refreshData(); 
+    }
     catch (err) { toast.error(err.message); }
   };
 
