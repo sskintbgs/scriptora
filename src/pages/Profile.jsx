@@ -229,7 +229,10 @@ const Profile = () => {
 
       {/* Name + Badges + Follow */}
       <div style={{ marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-        <h1 style={{ fontSize: '1.4rem', margin: 0, fontFamily: 'Outfit' }}>{pu.username}</h1>
+        <h1 style={{ fontSize: '1.4rem', margin: 0, fontFamily: 'Outfit', color: pu.banned ? 'var(--danger)' : 'inherit' }}>
+          {pu.username}
+          {pu.banned && <span style={{ marginLeft: '10px', fontSize: '0.7rem', verticalAlign: 'middle', background: 'rgba(239,68,68,0.15)', color: 'var(--danger)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(239,68,68,0.3)', textTransform: 'uppercase', letterSpacing: '1px' }}>Banned</span>}
+        </h1>
         {badges.map(b => {
           const cfg = BADGE_CONFIG[b];
           return cfg ? <span key={b} title={cfg.label} style={{ fontSize: '0.85rem' }}>{cfg.icon}</span> : null;
