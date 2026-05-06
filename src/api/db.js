@@ -299,6 +299,18 @@ export const api = {
     }
   },
 
+  deleteAllUserScripts: async (adminId, targetUserId) => {
+    const res = await fetch('/api/admin/delete-all-scripts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminId, targetUserId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to delete scripts');
+    await loadFromServer('scripts');
+    return data.deletedCount;
+  },
+
   // =================== OWNER ===================
   getAllUsers: async () => {
     await ensureInit();
