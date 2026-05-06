@@ -11,11 +11,30 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      try { setUser(JSON.parse(storedUser)); } catch {}
-    }
-    setLoading(false);
+    const initAuth = async () => {
+      const storedUser = localStorage.getItem('currentUser');
+      if (storedUser) {
+        try { 
+          const parsed = JSON.parse(storedUser);
+          // Check if user was banned by fetching fresh data
+          const allUsers = await api.getAllUsers();
+          const fresh = allUsers.find(u => String(u.id) === String(parsed.id));
+          if (fresh?.banned) {
+            logout();
+            toast.error('Your account has been banned.');
+          } else if (fresh) {
+            setUser(fresh);
+            localStorage.setItem('currentUser', JSON.stringify(fresh));
+          } else {
+            setUser(parsed);
+          }
+        } catch (e) {
+          console.error('[AUTH] Init failed:', e);
+        }
+      }
+      setLoading(false);
+    };
+    initAuth();
   }, []);
 
   const login = async (username, password) => {
