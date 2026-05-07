@@ -1,42 +1,272 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Cpu, CheckCircle, XCircle, Shield, Globe, MessageCircle, DollarSign, RefreshCw, Search, Zap, Lock, Unlock, Layers, Monitor, Smartphone, Apple } from 'lucide-react';
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Cpu, CheckCircle, XCircle, Shield, Globe, MessageCircle,
+  DollarSign, RefreshCw, Search, Zap, Lock, Unlock, Layers,
+  Monitor, Smartphone, Apple, X, ChevronDown, Filter,
+} from "lucide-react";
 
-const PRIORITY_EXECUTORS = ['Potassium', 'Delta', 'Xeno', 'Solara'];
+const PRIORITY_EXECUTORS = ["Potassium", "Delta", "Xeno", "Solara"];
 
 const TYPE_LABELS = {
-  'all': 'All',
-  'wexecutor': 'Windows',
-  'wexternal': 'External',
-  'mexecutor': 'Mac',
-  'aexecutor': 'Android',
-  'iexecutor': 'iOS',
+  all: "All",
+  wexecutor: "Windows",
+  wexternal: "External",
+  mexecutor: "Mac",
+  aexecutor: "Android",
+  iexecutor: "iOS",
 };
 
 const TYPE_ICONS = {
-  'wexecutor': <Monitor size={13} />,
-  'wexternal': <Shield size={13} />,
-  'mexecutor': <Apple size={13} />,
-  'aexecutor': <Smartphone size={13} />,
-  'iexecutor': <Smartphone size={13} />,
+  wexecutor: <Monitor size={13} />,
+  wexternal: <Shield size={13} />,
+  mexecutor: <Apple size={13} />,
+  aexecutor: <Smartphone size={13} />,
+  iexecutor: <Smartphone size={13} />,
 };
 
+const STATUS_FILTERS = [
+  { key: "all", label: "All" },
+  { key: "updated", label: "Updated" },
+  { key: "outdated", label: "Outdated" },
+  { key: "free", label: "Free" },
+  { key: "paid", label: "Paid" },
+  { key: "undetected", label: "Undetected" },
+];
+
+/* ─── Progress Bar ─── */
+const ProgressBar = ({ label, value, delay = 0 }) => {
+  const color =
+    value >= 80 ? "var(--clr-green)" : value >= 50 ? "var(--clr-amber)" : "var(--clr-red)";
+  return (
+    <div style={{ marginBottom: 6 }}>
+      <div className="es-row" style={{ fontSize: "0.7rem", color: "var(--t3)", marginBottom: 3 }}>
+        <span>{label}</span>
+        <span style={{ fontVariantNumeric: "tabular-nums" }}>{value}%</span>
+      </div>
+      <div className="es-bar-bg">
+        <motion.div
+          className="es-bar-fill"
+          initial={{ width: 0 }}
+          animate={{ width: `${value}%` }}
+          transition={{ duration: 0.9, delay, ease: [0.16, 1, 0.3, 1] }}
+          style={{ background: color }}
+        />
+      </div>
+    </div>
+  );
+};
+
+/* ─── Stat Card ─── */
+const StatCard = ({ label, value, color, icon, active, onClick }) => (
+  <button
+    className={`es-stat-card ${active ? "es-stat-active" : ""}`}
+    onClick={onClick}
+    style={{ "--stat-clr": color }}
+  >
+    <div className="es-stat-icon">{icon}</div>
+    <div className="es-stat-value">{value}</div>
+    <div className="es-stat-label">{label}</div>
+  </button>
+);
+
+/* ─── Executor Card ─── */
+const ExecCard = ({ exec, index, onClick }) => {
+  const isPriority = PRIORITY_EXECUTORS.includes(exec.title);
+  return (
+    <motion.button
+      className={`es-card ${isPriority ? "es-card-priority" : ""}`}
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(index * 0.035, 0.45), ease: [0.16, 1, 0.3, 1] }}
+      onClick={onClick}
+      layout
+    >
+      {/* Header */}
+      <div className="es-row" style={{ marginBottom: 8, alignItems: "flex-start" }}>
+        <div style={{ minWidth: 0 }}>
+          <h3 className="es-card-title">
+            {exec.title}
+            {isPriority && <Zap size={13} style={{ color: "var(--clr-amber)", flexShrink: 0 }} />}
+          </h3>
+          <span className="es-card-meta">
+            v{exec.version || "?"} · {TYPE_LABELS[exec.extype] || exec.extype || "Unknown"}
+          </span>
+        </div>
+        <span className={`es-badge ${exec.updateStatus ? "es-badge-green" : "es-badge-red"}`}>
+          {exec.updateStatus ? "✓ Updated" : "✕ Outdated"}
+        </span>
+      </div>
+
+      {/* Tags */}
+      <div className="es-tags">
+        <span className={`es-badge ${exec.detected ? "es-badge-red" : "es-badge-green"}`}>
+          {exec.detected ? "Detected" : "Undetected"}
+        </span>
+        <span className={`es-badge ${exec.free ? "es-badge-cyan" : "es-badge-purple"}`}>
+          {exec.free ? "Free" : exec.cost || "Paid"}
+        </span>
+        {exec.uncStatus && <span className="es-badge es-badge-indigo">UNC</span>}
+      </div>
+
+      {/* Progress */}
+      {(exec.uncPercentage !== undefined || exec.suncPercentage !== undefined) && (
+        <div style={{ marginTop: 10 }}>
+          {exec.uncPercentage !== undefined && (
+            <ProgressBar label="UNC" value={exec.uncPercentage} />
+          )}
+          {exec.suncPercentage !== undefined && (
+            <ProgressBar label="sUNC" value={exec.suncPercentage} delay={0.1} />
+          )}
+        </div>
+      )}
+
+      {/* Feature chips */}
+      <div className="es-features">
+        {exec.decompiler && (
+          <span className="es-feat"><Layers size={9} /> Decompiler</span>
+        )}
+        {exec.multiInject && (
+          <span className="es-feat"><Layers size={9} /> Multi-Inject</span>
+        )}
+        {exec.keysystem && (
+          <span className="es-feat" style={{ color: "var(--clr-amber)" }}><Lock size={9} /> Key System</span>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="es-card-footer">{exec.updatedDate || "—"}</div>
+    </motion.button>
+  );
+};
+
+/* ─── Detail Sheet (mobile-first modal / bottom-sheet) ─── */
+const DetailSheet = ({ exec, onClose }) => {
+  if (!exec) return null;
+  return (
+    <>
+      <motion.div
+        className="es-overlay"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      />
+      <motion.div
+        className="es-sheet"
+        initial={{ opacity: 0, y: 60, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 40, scale: 0.96 }}
+        transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.35 }}
+      >
+        {/* Drag Handle (mobile affordance) */}
+        <div className="es-sheet-handle" />
+
+        {/* Header */}
+        <div className="es-row" style={{ marginBottom: 16, alignItems: "flex-start" }}>
+          <div style={{ minWidth: 0 }}>
+            <h2 className="es-sheet-title">{exec.title}</h2>
+            <p className="es-sheet-meta">
+              v{exec.version} · {TYPE_LABELS[exec.extype] || exec.extype} · {exec.platform}
+            </p>
+          </div>
+          <button className="es-close" onClick={onClose}><X size={18} /></button>
+        </div>
+
+        {/* Info Grid */}
+        <div className="es-info-grid">
+          {[
+            {
+              label: "Status",
+              value: exec.updateStatus ? "✓ Updated" : "✕ Outdated",
+              color: exec.updateStatus ? "var(--clr-green)" : "var(--clr-red)",
+            },
+            {
+              label: "Hyperion",
+              value: exec.detected ? "Detected" : "Undetected",
+              color: exec.detected ? "var(--clr-red)" : "var(--clr-green)",
+            },
+            {
+              label: "Price",
+              value: exec.free ? "Free" : exec.cost || "Paid",
+              color: "var(--clr-cyan)",
+            },
+            {
+              label: "UNC",
+              value: `${exec.uncPercentage ?? "—"}%`,
+              color: "var(--clr-indigo)",
+            },
+          ].map((item) => (
+            <div key={item.label} className="es-info-cell">
+              <div style={{ color: item.color, fontWeight: 700, fontSize: "0.88rem" }}>{item.value}</div>
+              <div className="es-info-cell-label">{item.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Features */}
+        <div style={{ marginBottom: 18 }}>
+          <h4 className="es-section-title">Features</h4>
+          <div className="es-tags">
+            {exec.uncStatus && <span className="es-badge es-badge-green">UNC</span>}
+            {exec.decompiler && <span className="es-badge es-badge-indigo">Decompiler</span>}
+            {exec.multiInject && <span className="es-badge es-badge-cyan">Multi-Inject</span>}
+            {exec.keysystem && <span className="es-badge es-badge-amber">Key System</span>}
+            {exec.clientmods && <span className="es-badge es-badge-purple">Client Mods</span>}
+            {exec.raknet && <span className="es-badge es-badge-green">RakNet</span>}
+            {!exec.uncStatus && !exec.decompiler && !exec.multiInject && !exec.keysystem && !exec.clientmods && !exec.raknet && (
+              <span style={{ fontSize: "0.78rem", color: "var(--t3)" }}>None listed</span>
+            )}
+          </div>
+        </div>
+
+        {/* Links */}
+        <div className="es-links">
+          {exec.websitelink && (
+            <a href={exec.websitelink} target="_blank" rel="noopener noreferrer" className="es-link-btn es-link-primary">
+              <Globe size={14} /> Website
+            </a>
+          )}
+          {exec.discordlink && (
+            <a href={exec.discordlink} target="_blank" rel="noopener noreferrer" className="es-link-btn">
+              <MessageCircle size={14} /> Discord
+            </a>
+          )}
+          {exec.purchaselink && (
+            <a href={exec.purchaselink} target="_blank" rel="noopener noreferrer" className="es-link-btn">
+              <DollarSign size={14} /> Purchase
+            </a>
+          )}
+        </div>
+
+        <div style={{ marginTop: 14, fontSize: "0.72rem", color: "var(--t3)" }}>
+          Last updated: {exec.updatedDate || "—"}
+        </div>
+      </motion.div>
+    </>
+  );
+};
+
+/* ═══════════════════════════════════════════════════
+   Main Component
+   ═══════════════════════════════════════════════════ */
 const ExecutorStatus = () => {
   const [executors, setExecutors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [lastUpdated, setLastUpdated] = useState(null);
   const [selectedExecutor, setSelectedExecutor] = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const fetchExecutors = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/executors');
-      if (!res.ok) throw new Error('Failed to load');
+      const res = await fetch("/api/executors");
+      if (!res.ok) throw new Error("Failed to load");
       const data = await res.json();
       setExecutors(Array.isArray(data) ? data : []);
       setLastUpdated(new Date());
@@ -47,28 +277,30 @@ const ExecutorStatus = () => {
     }
   };
 
-  useEffect(() => { fetchExecutors(); }, []);
+  useEffect(() => {
+    fetchExecutors();
+  }, []);
 
-  // Get unique types from data
-  const availableTypes = ['all', ...new Set(executors.filter(e => !e.hidden && e.extype).map(e => e.extype))];
+  const availableTypes = [
+    "all",
+    ...new Set(executors.filter((e) => !e.hidden && e.extype).map((e) => e.extype)),
+  ];
 
   const filtered = executors
-    .filter(e => !e.hidden)
-    .filter(e => {
-      if (statusFilter === 'updated') return e.updateStatus === true;
-      if (statusFilter === 'outdated') return e.updateStatus === false;
-      if (statusFilter === 'free') return e.free === true;
-      if (statusFilter === 'paid') return e.free === false;
-      if (statusFilter === 'undetected') return e.detected === false;
+    .filter((e) => !e.hidden)
+    .filter((e) => {
+      if (statusFilter === "updated") return e.updateStatus === true;
+      if (statusFilter === "outdated") return e.updateStatus === false;
+      if (statusFilter === "free") return e.free === true;
+      if (statusFilter === "paid") return e.free === false;
+      if (statusFilter === "undetected") return e.detected === false;
       return true;
     })
-    .filter(e => {
-      if (typeFilter === 'all') return true;
-      return e.extype === typeFilter;
-    })
-    .filter(e =>
-      e.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.platform?.toLowerCase().includes(searchQuery.toLowerCase())
+    .filter((e) => (typeFilter === "all" ? true : e.extype === typeFilter))
+    .filter(
+      (e) =>
+        e.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        e.platform?.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => {
       const aP = PRIORITY_EXECUTORS.includes(a.title) ? -1 : 0;
@@ -77,291 +309,663 @@ const ExecutorStatus = () => {
       return (b.updateStatus ? 1 : 0) - (a.updateStatus ? 1 : 0);
     });
 
-  const visible = executors.filter(e => !e.hidden);
+  const visible = executors.filter((e) => !e.hidden);
   const stats = {
     total: visible.length,
-    updated: visible.filter(e => e.updateStatus).length,
-    outdated: visible.filter(e => !e.updateStatus).length,
-    free: visible.filter(e => e.free).length,
-    undetected: visible.filter(e => !e.detected).length,
+    updated: visible.filter((e) => e.updateStatus).length,
+    outdated: visible.filter((e) => !e.updateStatus).length,
+    free: visible.filter((e) => e.free).length,
+    undetected: visible.filter((e) => !e.detected).length,
   };
 
-  const getTypeLabel = (extype) => TYPE_LABELS[extype] || extype || 'Unknown';
+  const activeFilterCount =
+    (statusFilter !== "all" ? 1 : 0) + (typeFilter !== "all" ? 1 : 0);
 
   return (
-    <div className="container" style={{ padding: '40px 16px' }}>
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '28px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px', flexWrap: 'wrap' }}>
-          <Cpu className="text-primary" size={30} />
-          <h1 style={{ fontSize: '2rem' }}>Executor Status</h1>
-        </div>
-        {lastUpdated && (
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            {lastUpdated.toLocaleTimeString()} •
-            <button onClick={fetchExecutors} style={{ background: 'none', color: 'var(--primary-color)', marginLeft: '4px', display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.75rem' }}>
-              <RefreshCw size={11} /> Refresh
-            </button>
-          </p>
-        )}
-      </motion.div>
+    <>
+      <style>{`
+        /* ─── Design Tokens ─── */
+        :root {
+          --bg-0: #0b0e14;
+          --bg-1: #111520;
+          --bg-2: #181d2a;
+          --bg-3: #1f2536;
+          --t1: #e8ecf4;
+          --t2: #a0a8be;
+          --t3: #5e6580;
+          --border: rgba(255,255,255,0.06);
+          --clr-indigo: #818cf8;
+          --clr-green: #34d399;
+          --clr-red: #f87171;
+          --clr-amber: #fbbf24;
+          --clr-cyan: #38bdf8;
+          --clr-purple: #c084fc;
+          --radius: 14px;
+          --radius-sm: 8px;
+        }
 
-      {/* Stats */}
-      <motion.div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '10px', marginBottom: '20px' }}
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
-        {[
-          { label: 'Total', value: stats.total, color: 'var(--primary-color)', icon: <Cpu size={14} /> },
-          { label: 'Updated', value: stats.updated, color: 'var(--success)', icon: <CheckCircle size={14} /> },
-          { label: 'Outdated', value: stats.outdated, color: 'var(--danger)', icon: <XCircle size={14} /> },
-          { label: 'Free', value: stats.free, color: 'var(--accent-color)', icon: <Unlock size={14} /> },
-          { label: 'Undetected', value: stats.undetected, color: 'var(--warning)', icon: <Shield size={14} /> },
-        ].map(s => (
-          <div key={s.label} className="glass-card" style={{ padding: '12px', textAlign: 'center', cursor: 'pointer' }}
-            onClick={() => setStatusFilter(statusFilter === s.label.toLowerCase() ? 'all' : s.label.toLowerCase())}>
-            <div style={{ color: s.color, marginBottom: '2px' }}>{s.icon}</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 700, color: s.color, fontFamily: 'Outfit' }}>{s.value}</div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{s.label}</div>
+        @font-face {
+          font-family: 'Geist';
+          src: local('Geist'), local('GeistVF');
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body, #root {
+          font-family: 'Geist', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+          background: var(--bg-0);
+          color: var(--t1);
+          -webkit-font-smoothing: antialiased;
+        }
+
+        .es-wrap {
+          max-width: 1100px;
+          margin: 0 auto;
+          padding: 32px 20px 60px;
+        }
+
+        /* ─── Header ─── */
+        .es-header { margin-bottom: 28px; }
+        .es-header h1 {
+          font-size: 1.75rem;
+          font-weight: 800;
+          letter-spacing: -0.03em;
+          background: linear-gradient(135deg, var(--clr-indigo), var(--clr-cyan));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        .es-header-sub {
+          font-size: 0.78rem;
+          color: var(--t3);
+          margin-top: 4px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .es-refresh {
+          background: none;
+          border: none;
+          color: var(--clr-indigo);
+          font: inherit;
+          font-size: 0.78rem;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          padding: 0;
+        }
+        .es-refresh:hover { text-decoration: underline; }
+
+        /* ─── Stat Cards ─── */
+        .es-stats {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 10px;
+          margin-bottom: 20px;
+        }
+        @media (max-width: 600px) {
+          .es-stats {
+            grid-template-columns: repeat(3, 1fr);
+          }
+          .es-stats .es-stat-card:nth-child(4),
+          .es-stats .es-stat-card:nth-child(5) {
+            grid-column: span 1;
+          }
+        }
+        .es-stat-card {
+          background: var(--bg-1);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          padding: 14px 8px;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.2s;
+          font: inherit;
+          color: inherit;
+        }
+        .es-stat-card:hover { background: var(--bg-2); border-color: rgba(255,255,255,0.1); }
+        .es-stat-active {
+          border-color: var(--stat-clr) !important;
+          background: color-mix(in srgb, var(--stat-clr) 8%, var(--bg-1)) !important;
+          box-shadow: 0 0 20px color-mix(in srgb, var(--stat-clr) 15%, transparent);
+        }
+        .es-stat-icon { margin-bottom: 4px; color: var(--stat-clr); display: flex; justify-content: center; }
+        .es-stat-value {
+          font-size: 1.35rem;
+          font-weight: 800;
+          color: var(--stat-clr);
+          font-variant-numeric: tabular-nums;
+          line-height: 1.2;
+        }
+        .es-stat-label {
+          font-size: 0.62rem;
+          color: var(--t3);
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          margin-top: 2px;
+        }
+
+        /* ─── Toolbar ─── */
+        .es-toolbar {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 16px;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+        .es-search-wrap {
+          position: relative;
+          flex: 1;
+          min-width: 160px;
+        }
+        .es-search-wrap svg {
+          position: absolute;
+          left: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--t3);
+          pointer-events: none;
+        }
+        .es-search {
+          width: 100%;
+          background: var(--bg-1);
+          border: 1px solid var(--border);
+          border-radius: 99px;
+          padding: 10px 14px 10px 36px;
+          font: inherit;
+          font-size: 0.85rem;
+          color: var(--t1);
+          outline: none;
+          transition: border 0.2s;
+        }
+        .es-search::placeholder { color: var(--t3); }
+        .es-search:focus { border-color: var(--clr-indigo); }
+
+        .es-filter-toggle {
+          background: var(--bg-1);
+          border: 1px solid var(--border);
+          border-radius: 99px;
+          padding: 10px 14px;
+          font: inherit;
+          font-size: 0.82rem;
+          color: var(--t2);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          transition: all 0.2s;
+          white-space: nowrap;
+        }
+        .es-filter-toggle:hover { border-color: rgba(255,255,255,0.12); }
+        .es-filter-badge {
+          background: var(--clr-indigo);
+          color: #fff;
+          font-size: 0.65rem;
+          font-weight: 700;
+          width: 18px; height: 18px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          line-height: 1;
+        }
+
+        /* ─── Filter Panel ─── */
+        .es-filter-panel {
+          background: var(--bg-1);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          padding: 16px;
+          margin-bottom: 16px;
+          overflow: hidden;
+        }
+        .es-filter-section { margin-bottom: 12px; }
+        .es-filter-section:last-child { margin-bottom: 0; }
+        .es-filter-label {
+          font-size: 0.7rem;
+          color: var(--t3);
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          margin-bottom: 8px;
+        }
+        .es-pills {
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .es-pill {
+          background: var(--bg-2);
+          border: 1px solid var(--border);
+          border-radius: 99px;
+          padding: 6px 14px;
+          font: inherit;
+          font-size: 0.78rem;
+          color: var(--t2);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          transition: all 0.15s;
+          white-space: nowrap;
+        }
+        .es-pill:hover { border-color: rgba(255,255,255,0.12); color: var(--t1); }
+        .es-pill-active {
+          background: color-mix(in srgb, var(--clr-indigo) 15%, var(--bg-2));
+          border-color: var(--clr-indigo);
+          color: var(--clr-indigo);
+        }
+
+        /* ─── Grid ─── */
+        .es-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 12px;
+        }
+        @media (max-width: 680px) {
+          .es-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        /* ─── Card ─── */
+        .es-card {
+          background: var(--bg-1);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          padding: 18px;
+          cursor: pointer;
+          transition: all 0.2s;
+          text-align: left;
+          font: inherit;
+          color: inherit;
+          width: 100%;
+          display: block;
+        }
+        .es-card:hover {
+          border-color: rgba(255,255,255,0.12);
+          background: var(--bg-2);
+          transform: translateY(-1px);
+        }
+        .es-card:active { transform: scale(0.995); }
+        .es-card-priority {
+          border-color: rgba(129,140,248,0.25);
+          background: linear-gradient(135deg, color-mix(in srgb, var(--clr-indigo) 4%, var(--bg-1)), var(--bg-1));
+        }
+        .es-card-priority:hover { border-color: rgba(129,140,248,0.4); }
+        .es-card-title {
+          font-size: 1rem;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          line-height: 1.3;
+        }
+        .es-card-meta { font-size: 0.72rem; color: var(--t3); }
+        .es-card-footer {
+          font-size: 0.7rem;
+          color: var(--t3);
+          border-top: 1px solid var(--border);
+          padding-top: 10px;
+          margin-top: 10px;
+        }
+
+        /* ─── Helpers ─── */
+        .es-row { display: flex; justify-content: space-between; align-items: center; }
+        .es-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+        .es-features { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+        .es-feat {
+          font-size: 0.68rem;
+          color: var(--t3);
+          display: flex;
+          align-items: center;
+          gap: 3px;
+        }
+
+        /* ─── Badges ─── */
+        .es-badge {
+          font-size: 0.68rem;
+          font-weight: 600;
+          padding: 3px 10px;
+          border-radius: 99px;
+          white-space: nowrap;
+          line-height: 1.5;
+          display: inline-block;
+        }
+        .es-badge-green  { background: rgba(52,211,153,0.1); color: var(--clr-green); border: 1px solid rgba(52,211,153,0.2); }
+        .es-badge-red    { background: rgba(248,113,113,0.1); color: var(--clr-red); border: 1px solid rgba(248,113,113,0.2); }
+        .es-badge-cyan   { background: rgba(56,189,248,0.1);  color: var(--clr-cyan); border: 1px solid rgba(56,189,248,0.2); }
+        .es-badge-purple { background: rgba(192,132,252,0.1); color: var(--clr-purple); border: 1px solid rgba(192,132,252,0.2); }
+        .es-badge-indigo { background: rgba(129,140,248,0.1); color: var(--clr-indigo); border: 1px solid rgba(129,140,248,0.2); }
+        .es-badge-amber  { background: rgba(251,191,36,0.1);  color: var(--clr-amber); border: 1px solid rgba(251,191,36,0.2); }
+
+        /* ─── Progress Bar ─── */
+        .es-bar-bg {
+          height: 4px;
+          background: var(--bg-3);
+          border-radius: 4px;
+          overflow: hidden;
+        }
+        .es-bar-fill {
+          height: 100%;
+          border-radius: 4px;
+        }
+
+        /* ─── Overlay & Sheet ─── */
+        .es-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.65);
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
+          z-index: 900;
+        }
+        .es-sheet {
+          position: fixed;
+          z-index: 901;
+          background: var(--bg-1);
+          border: 1px solid var(--border);
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+        /* Desktop centered modal */
+        @media (min-width: 641px) {
+          .es-sheet {
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 480px;
+            max-height: 85vh;
+            border-radius: var(--radius);
+            padding: 28px;
+          }
+        }
+        /* Mobile bottom sheet */
+        @media (max-width: 640px) {
+          .es-sheet {
+            bottom: 0; left: 0; right: 0;
+            max-height: 88vh;
+            border-radius: 20px 20px 0 0;
+            padding: 12px 20px 32px;
+            transform: none !important;
+          }
+        }
+        .es-sheet-handle {
+          width: 36px;
+          height: 4px;
+          background: var(--bg-3);
+          border-radius: 4px;
+          margin: 0 auto 16px;
+        }
+        @media (min-width: 641px) {
+          .es-sheet-handle { display: none; }
+        }
+        .es-sheet-title {
+          font-size: 1.35rem;
+          font-weight: 800;
+          letter-spacing: -0.02em;
+        }
+        .es-sheet-meta {
+          font-size: 0.78rem;
+          color: var(--t3);
+          margin-top: 2px;
+        }
+        .es-close {
+          background: var(--bg-2);
+          border: 1px solid var(--border);
+          border-radius: 50%;
+          width: 32px; height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: var(--t2);
+          flex-shrink: 0;
+          transition: all 0.15s;
+        }
+        .es-close:hover { background: var(--bg-3); color: var(--t1); }
+
+        /* ─── Info Grid ─── */
+        .es-info-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-bottom: 18px;
+        }
+        .es-info-cell {
+          background: var(--bg-2);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          padding: 12px;
+          text-align: center;
+        }
+        .es-info-cell-label {
+          font-size: 0.65rem;
+          color: var(--t3);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-top: 2px;
+        }
+
+        .es-section-title {
+          font-size: 0.82rem;
+          font-weight: 700;
+          margin-bottom: 8px;
+          color: var(--t2);
+        }
+
+        /* ─── Links ─── */
+        .es-links { display: flex; gap: 8px; flex-wrap: wrap; }
+        .es-link-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 9px 16px;
+          font-size: 0.82rem;
+          font-weight: 600;
+          border-radius: var(--radius-sm);
+          text-decoration: none;
+          transition: all 0.15s;
+          background: var(--bg-2);
+          border: 1px solid var(--border);
+          color: var(--t2);
+        }
+        .es-link-btn:hover { border-color: rgba(255,255,255,0.15); color: var(--t1); }
+        .es-link-primary {
+          background: var(--clr-indigo);
+          border-color: var(--clr-indigo);
+          color: #fff;
+        }
+        .es-link-primary:hover {
+          background: color-mix(in srgb, var(--clr-indigo) 85%, #fff);
+          color: #fff;
+        }
+
+        /* ─── Empty & Loading ─── */
+        .es-center {
+          text-align: center;
+          padding: 60px 20px;
+        }
+
+        /* ─── Mobile adjustments ─── */
+        @media (max-width: 480px) {
+          .es-wrap { padding: 20px 14px 50px; }
+          .es-header h1 { font-size: 1.4rem; }
+          .es-stat-value { font-size: 1.15rem; }
+          .es-card { padding: 14px; }
+          .es-card-title { font-size: 0.92rem; }
+        }
+      `}</style>
+
+      <div className="es-wrap">
+        {/* Header */}
+        <motion.div
+          className="es-header"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <Cpu size={26} style={{ color: "var(--clr-indigo)" }} />
+            <h1>Executor Status</h1>
           </div>
-        ))}
-      </motion.div>
+          {lastUpdated && (
+            <div className="es-header-sub">
+              <span>{lastUpdated.toLocaleTimeString()}</span>
+              <span>·</span>
+              <button className="es-refresh" onClick={fetchExecutors}>
+                <RefreshCw size={11} /> Refresh
+              </button>
+            </div>
+          )}
+        </motion.div>
 
-      {/* Type Filter */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginRight: '4px' }}>Type:</span>
-        {availableTypes.map(t => (
-          <button key={t} className={`btn ${typeFilter === t ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '4px 12px', fontSize: '0.78rem', borderRadius: '99px', display: 'flex', alignItems: 'center', gap: '4px' }}
-            onClick={() => setTypeFilter(t)}>
-            {TYPE_ICONS[t]} {TYPE_LABELS[t] || t}
-          </button>
-        ))}
-      </div>
+        {/* Stats */}
+        <motion.div
+          className="es-stats"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.08 }}
+        >
+          <StatCard label="Total" value={stats.total} color="var(--clr-indigo)" icon={<Cpu size={14} />}
+            active={statusFilter === "total"} onClick={() => setStatusFilter("all")} />
+          <StatCard label="Updated" value={stats.updated} color="var(--clr-green)" icon={<CheckCircle size={14} />}
+            active={statusFilter === "updated"} onClick={() => setStatusFilter(statusFilter === "updated" ? "all" : "updated")} />
+          <StatCard label="Outdated" value={stats.outdated} color="var(--clr-red)" icon={<XCircle size={14} />}
+            active={statusFilter === "outdated"} onClick={() => setStatusFilter(statusFilter === "outdated" ? "all" : "outdated")} />
+          <StatCard label="Free" value={stats.free} color="var(--clr-cyan)" icon={<Unlock size={14} />}
+            active={statusFilter === "free"} onClick={() => setStatusFilter(statusFilter === "free" ? "all" : "free")} />
+          <StatCard label="Undetected" value={stats.undetected} color="var(--clr-amber)" icon={<Shield size={14} />}
+            active={statusFilter === "undetected"} onClick={() => setStatusFilter(statusFilter === "undetected" ? "all" : "undetected")} />
+        </motion.div>
 
-      {/* Status Filter + Search */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '18px', flexWrap: 'wrap', alignItems: 'center' }}>
-        {['all', 'updated', 'outdated', 'free', 'paid', 'undetected'].map(f => (
-          <button key={f} className={`btn ${statusFilter === f ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '5px 12px', fontSize: '0.78rem', textTransform: 'capitalize' }}
-            onClick={() => setStatusFilter(f)}>{f}</button>
-        ))}
-        <div style={{ marginLeft: 'auto', position: 'relative', minWidth: '180px' }}>
-          <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input type="text" className="input-field" placeholder="Search..." value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)} style={{ paddingLeft: '30px', margin: 0, fontSize: '0.85rem' }} />
-        </div>
-      </div>
-
-      {/* Loading */}
-      {loading && (
-        <div style={{ textAlign: 'center', padding: '60px 0' }}>
-          <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
-            <RefreshCw size={28} className="text-primary" />
-          </motion.div>
-          <p className="text-muted" style={{ marginTop: '14px' }}>Loading executors...</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="glass-card" style={{ textAlign: 'center', padding: '40px' }}>
-          <XCircle size={36} className="text-danger" style={{ margin: '0 auto 12px' }} />
-          <h3>Connection failed</h3>
-          <p className="text-muted" style={{ marginBottom: '12px' }}>{error}</p>
-          <button className="btn btn-primary" onClick={fetchExecutors}><RefreshCw size={14} /> Retry</button>
-        </div>
-      )}
-
-      {/* Executor Grid */}
-      {!loading && !error && (
-        <div className="grid-3">
-          {filtered.map((exec, idx) => {
-            const isPriority = PRIORITY_EXECUTORS.includes(exec.title);
-            return (
-              <motion.div key={exec._id || exec.title}
-                className="glass-card"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(idx * 0.03, 0.4), ease: [0.16, 1, 0.3, 1] }}
-                style={{ cursor: 'pointer', borderColor: isPriority ? 'rgba(99,102,241,0.4)' : undefined }}
-                onClick={() => setSelectedExecutor(exec)}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                  <div>
-                    <h3 style={{ fontSize: '1.05rem', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      {exec.title}
-                      {isPriority && <Zap size={13} style={{ color: 'var(--warning)' }} />}
-                    </h3>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                      v{exec.version || '?'} • {getTypeLabel(exec.extype)}
-                    </span>
-                  </div>
-                  <span className={`badge ${exec.updateStatus ? 'verified' : 'pending'}`} style={{ fontSize: '0.68rem' }}>
-                    {exec.updateStatus ? '✓ Updated' : '✕ Outdated'}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                  <span className="badge" style={{
-                    background: exec.detected ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
-                    color: exec.detected ? 'var(--danger)' : 'var(--success)',
-                    border: `1px solid ${exec.detected ? 'rgba(239,68,68,0.25)' : 'rgba(16,185,129,0.25)'}`
-                  }}>
-                    {exec.detected ? 'Detected' : 'Undetected'}
-                  </span>
-                  <span className="badge" style={{
-                    background: exec.free ? 'rgba(56,189,248,0.1)' : 'rgba(192,132,252,0.1)',
-                    color: exec.free ? 'var(--accent-color)' : 'var(--secondary-color)',
-                    border: `1px solid ${exec.free ? 'rgba(56,189,248,0.25)' : 'rgba(192,132,252,0.25)'}`
-                  }}>
-                    {exec.free ? 'Free' : exec.cost || 'Paid'}
-                  </span>
-                  {exec.uncStatus && (
-                    <span className="badge" style={{ background: 'rgba(99,102,241,0.1)', color: 'var(--primary-color)', border: '1px solid rgba(99,102,241,0.25)' }}>UNC</span>
-                  )}
-                </div>
-
-                {(exec.uncPercentage !== undefined || exec.suncPercentage !== undefined) && (
-                  <div style={{ marginBottom: '10px' }}>
-                    {exec.uncPercentage !== undefined && (
-                      <div style={{ marginBottom: '5px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '2px' }}>
-                          <span>UNC</span><span>{exec.uncPercentage}%</span>
-                        </div>
-                        <div style={{ height: '3px', background: 'var(--bg-color-lighter)', borderRadius: '2px', overflow: 'hidden' }}>
-                          <motion.div initial={{ width: 0 }} animate={{ width: `${exec.uncPercentage}%` }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                            style={{ height: '100%', background: exec.uncPercentage >= 80 ? 'var(--success)' : exec.uncPercentage >= 50 ? 'var(--warning)' : 'var(--danger)', borderRadius: '2px' }} />
-                        </div>
-                      </div>
-                    )}
-                    {exec.suncPercentage !== undefined && (
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '2px' }}>
-                          <span>sUNC</span><span>{exec.suncPercentage}%</span>
-                        </div>
-                        <div style={{ height: '3px', background: 'var(--bg-color-lighter)', borderRadius: '2px', overflow: 'hidden' }}>
-                          <motion.div initial={{ width: 0 }} animate={{ width: `${exec.suncPercentage}%` }} transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-                            style={{ height: '100%', background: exec.suncPercentage >= 80 ? 'var(--success)' : exec.suncPercentage >= 50 ? 'var(--warning)' : 'var(--danger)', borderRadius: '2px' }} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                  {exec.decompiler && <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px' }}><Layers size={9} /> Decompiler</span>}
-                  {exec.multiInject && <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px' }}><Layers size={9} /> Multi-Inject</span>}
-                  {exec.keysystem && <span style={{ fontSize: '0.68rem', color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: '3px' }}><Lock size={9} /> Key System</span>}
-                </div>
-
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', borderTop: '1px solid var(--border-color)', paddingTop: '8px' }}>
-                  {exec.updatedDate || '—'}
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
-
-      {!loading && !error && filtered.length === 0 && (
-        <div className="glass-card" style={{ textAlign: 'center', padding: '40px' }}>
-          <Search size={28} className="text-muted" style={{ margin: '0 auto 10px' }} />
-          <p className="text-muted">No executors match your filters.</p>
-        </div>
-      )}
-
-      {/* Detail Modal */}
-      <AnimatePresence>
-        {selectedExecutor && (
-          <>
-            <motion.div
-              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 300, backdropFilter: 'blur(4px)' }}
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setSelectedExecutor(null)}
+        {/* Toolbar: Search + Filter Toggle */}
+        <div className="es-toolbar">
+          <div className="es-search-wrap">
+            <Search size={15} />
+            <input
+              className="es-search"
+              type="text"
+              placeholder="Search executors..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
+          </div>
+          <button className="es-filter-toggle" onClick={() => setFiltersOpen(!filtersOpen)}>
+            <Filter size={14} />
+            Filters
+            {activeFilterCount > 0 && <span className="es-filter-badge">{activeFilterCount}</span>}
+            <ChevronDown size={14} style={{ transform: filtersOpen ? "rotate(180deg)" : "none", transition: "0.2s" }} />
+          </button>
+        </div>
+
+        {/* Expandable Filter Panel */}
+        <AnimatePresence>
+          {filtersOpen && (
             <motion.div
-              style={{
-                position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-                zIndex: 301, width: '90%', maxWidth: '500px', maxHeight: '85vh', overflowY: 'auto',
-                background: 'var(--bg-color-light)', border: '1px solid var(--border-color)',
-                borderRadius: '16px', padding: '28px'
-              }}
-              initial={{ opacity: 0, scale: 0.92, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92 }}
-              transition={{ ease: [0.16, 1, 0.3, 1] }}
+              className="es-filter-panel"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px' }}>
-                <div>
-                  <h2 style={{ marginBottom: '3px', fontSize: '1.4rem' }}>{selectedExecutor.title}</h2>
-                  <p className="text-muted" style={{ fontSize: '0.82rem' }}>v{selectedExecutor.version} • {getTypeLabel(selectedExecutor.extype)} • {selectedExecutor.platform}</p>
-                </div>
-                <button onClick={() => setSelectedExecutor(null)} className="btn btn-secondary" style={{ padding: '5px 9px', fontSize: '0.85rem' }}>✕</button>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
-                <div className="glass-card" style={{ padding: '10px', textAlign: 'center' }}>
-                  <div style={{ color: selectedExecutor.updateStatus ? 'var(--success)' : 'var(--danger)', fontWeight: 700, fontSize: '0.85rem' }}>
-                    {selectedExecutor.updateStatus ? '✓ Updated' : '✕ Outdated'}
-                  </div>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Status</div>
-                </div>
-                <div className="glass-card" style={{ padding: '10px', textAlign: 'center' }}>
-                  <div style={{ color: selectedExecutor.detected ? 'var(--danger)' : 'var(--success)', fontWeight: 700, fontSize: '0.85rem' }}>
-                    {selectedExecutor.detected ? 'Detected' : 'Undetected'}
-                  </div>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Hyperion</div>
-                </div>
-                <div className="glass-card" style={{ padding: '10px', textAlign: 'center' }}>
-                  <div style={{ color: 'var(--accent-color)', fontWeight: 700, fontSize: '0.85rem' }}>
-                    {selectedExecutor.free ? 'Free' : selectedExecutor.cost || 'Paid'}
-                  </div>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Price</div>
-                </div>
-                <div className="glass-card" style={{ padding: '10px', textAlign: 'center' }}>
-                  <div style={{ color: 'var(--primary-color)', fontWeight: 700, fontSize: '0.85rem' }}>
-                    {selectedExecutor.uncPercentage ?? '—'}%
-                  </div>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>UNC</div>
+              <div className="es-filter-section">
+                <div className="es-filter-label">Status</div>
+                <div className="es-pills">
+                  {STATUS_FILTERS.map((f) => (
+                    <button
+                      key={f.key}
+                      className={`es-pill ${statusFilter === f.key ? "es-pill-active" : ""}`}
+                      onClick={() => setStatusFilter(f.key)}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
                 </div>
               </div>
-
-              <div style={{ marginBottom: '16px' }}>
-                <h4 style={{ marginBottom: '6px', fontSize: '0.85rem' }}>Features</h4>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {selectedExecutor.uncStatus && <span className="badge verified">UNC</span>}
-                  {selectedExecutor.decompiler && <span className="badge" style={{ background: 'rgba(99,102,241,0.1)', color: 'var(--primary-color)' }}>Decompiler</span>}
-                  {selectedExecutor.multiInject && <span className="badge" style={{ background: 'rgba(56,189,248,0.1)', color: 'var(--accent-color)' }}>Multi-Inject</span>}
-                  {selectedExecutor.keysystem && <span className="badge pending">Key System</span>}
-                  {selectedExecutor.clientmods && <span className="badge" style={{ background: 'rgba(192,132,252,0.1)', color: 'var(--secondary-color)' }}>Client Mods</span>}
-                  {selectedExecutor.raknet && <span className="badge" style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--success)' }}>RakNet</span>}
+              <div className="es-filter-section">
+                <div className="es-filter-label">Platform</div>
+                <div className="es-pills">
+                  {availableTypes.map((t) => (
+                    <button
+                      key={t}
+                      className={`es-pill ${typeFilter === t ? "es-pill-active" : ""}`}
+                      onClick={() => setTypeFilter(t)}
+                    >
+                      {TYPE_ICONS[t]} {TYPE_LABELS[t] || t}
+                    </button>
+                  ))}
                 </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {selectedExecutor.websitelink && (
-                  <a href={selectedExecutor.websitelink} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ padding: '7px 12px', fontSize: '0.82rem' }}>
-                    <Globe size={13} /> Website
-                  </a>
-                )}
-                {selectedExecutor.discordlink && (
-                  <a href={selectedExecutor.discordlink} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '7px 12px', fontSize: '0.82rem' }}>
-                    <MessageCircle size={13} /> Discord
-                  </a>
-                )}
-                {selectedExecutor.purchaselink && (
-                  <a href={selectedExecutor.purchaselink} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '7px 12px', fontSize: '0.82rem' }}>
-                    <DollarSign size={13} /> Purchase
-                  </a>
-                )}
-              </div>
-
-              <div style={{ marginTop: '14px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                Last updated: {selectedExecutor.updatedDate || '—'}
               </div>
             </motion.div>
-          </>
+          )}
+        </AnimatePresence>
+
+        {/* Result count */}
+        {!loading && !error && (
+          <div style={{ fontSize: "0.75rem", color: "var(--t3)", marginBottom: 14 }}>
+            Showing {filtered.length} of {visible.length} executors
+          </div>
         )}
-      </AnimatePresence>
-    </div>
+
+        {/* Loading */}
+        {loading && (
+          <div className="es-center">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+              style={{ display: "inline-block" }}
+            >
+              <RefreshCw size={26} style={{ color: "var(--clr-indigo)" }} />
+            </motion.div>
+            <p style={{ color: "var(--t3)", marginTop: 14, fontSize: "0.85rem" }}>
+              Loading executors...
+            </p>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && (
+          <div className="es-center" style={{ background: "var(--bg-1)", borderRadius: "var(--radius)", border: "1px solid var(--border)" }}>
+            <XCircle size={32} style={{ color: "var(--clr-red)", marginBottom: 10 }} />
+            <h3 style={{ marginBottom: 4 }}>Connection failed</h3>
+            <p style={{ color: "var(--t3)", fontSize: "0.85rem", marginBottom: 16 }}>{error}</p>
+            <button className="es-link-btn es-link-primary" onClick={fetchExecutors} style={{ margin: "0 auto" }}>
+              <RefreshCw size={14} /> Retry
+            </button>
+          </div>
+        )}
+
+        {/* Grid */}
+        {!loading && !error && (
+          <div className="es-grid">
+            {filtered.map((exec, idx) => (
+              <ExecCard
+                key={exec._id || exec.title}
+                exec={exec}
+                index={idx}
+                onClick={() => setSelectedExecutor(exec)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Empty */}
+        {!loading && !error && filtered.length === 0 && (
+          <div className="es-center" style={{ background: "var(--bg-1)", borderRadius: "var(--radius)", border: "1px solid var(--border)" }}>
+            <Search size={26} style={{ color: "var(--t3)", marginBottom: 10 }} />
+            <p style={{ color: "var(--t3)", fontSize: "0.88rem" }}>No executors match your filters.</p>
+          </div>
+        )}
+
+        {/* Detail Modal / Bottom Sheet */}
+        <AnimatePresence>
+          {selectedExecutor && (
+            <DetailSheet exec={selectedExecutor} onClose={() => setSelectedExecutor(null)} />
+          )}
+        </AnimatePresence>
+      </div>
+    </>
   );
 };
 
