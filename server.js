@@ -89,11 +89,15 @@ const ipTracker = new Map();
 const challengeStore = new Map();
 const clearanceTokens = new Set();
 let onlineUsers = new Set(); // Track online connections
+let maintenance = { maintenanceMode: false, assetUploadsBlocked: false };
+const MAINTENANCE_FILE = path.join(__dirname, 'data', 'maintenance.json');
+try { if (fs.existsSync(MAINTENANCE_FILE)) maintenance = JSON.parse(fs.readFileSync(MAINTENANCE_FILE, 'utf8')); } catch {}
+function saveMaintenance() { try { fs.writeFileSync(MAINTENANCE_FILE, JSON.stringify(maintenance)); } catch {} }
 
 // ============================================================
 //  MIDDLEWARE
 // ============================================================
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '5mb' }));
 app.use(cookieParser(SERVER_SECRET));
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: true, credentials: true }));
@@ -216,6 +220,7 @@ app.get('/api/db/:collection', (req, res) => {
 
 // --- Sync: POST save full collection ---
 app.post('/api/db/:collection', writeLimiter, checkBanned, (req, res) => {
+  if (maintenance.maintenanceMode) return res.status(503).json({ error: 'Maintenance mode' });
   const { collection } = req.params;
   if (!DB_FILES[collection]) return res.status(400).json({ error: 'Invalid collection' });
   const data = req.body;
@@ -316,6 +321,31 @@ app.get('/api/profile/:username', (req, res) => {
   return res.status(404).json({ error: 'User not found' });
 });
 
+// --- Maintenance & Storage Management ---
+app.get('/api/admin/maintenance', (req, res) => res.json(maintenance));
+app.post('/api/admin/maintenance', writeLimiter, (req, res) => {
+  const { adminId, assetUploadsBlocked, maintenanceMode } = req.body;
+  const users = readDB('users') || [];
+  const admin = users.find(u => String(u.id) === String(adminId));
+  if (!admin || !['admin', 'owner'].includes(admin.role)) return res.status(403).json({ error: 'Unauthorized' });
+  if (assetUploadsBlocked !== undefined) maintenance.assetUploadsBlocked = assetUploadsBlocked;
+  if (maintenanceMode !== undefined) maintenance.maintenanceMode = maintenanceMode;
+  saveMaintenance();
+  res.json(maintenance);
+});
+app.post('/api/admin/purge-assets', writeLimiter, (req, res) => {
+  const { adminId, type } = req.body;
+  const users = readDB('users') || [];
+  const admin = users.find(u => String(u.id) === String(adminId));
+  if (!admin || admin.role !== 'owner') return res.status(403).json({ error: 'Owner only' });
+  users.forEach(u => {
+    if (type === 'banners' || type === 'all') u.banner = '';
+    if (type === 'avatars' || type === 'all') u.avatar = '';
+  });
+  writeDB('users', users);
+  res.json({ success: true, count: users.length });
+});
+
 // --- Delete all scripts by user (admin/owner only) ---
 app.post('/api/admin/delete-all-scripts', writeLimiter, (req, res) => {
   const { adminId, targetUserId } = req.body;
@@ -341,14 +371,19 @@ app.post('/api/admin/delete-all-scripts', writeLimiter, (req, res) => {
 
 // --- Update user profile (bio, avatar) ---
 app.post('/api/profile/update', writeLimiter, checkBanned, (req, res) => {
-  const { userId, bio, avatar } = req.body;
+  if (maintenance.maintenanceMode) return res.status(503).json({ error: 'Maintenance mode' });
+  const { userId, bio, avatar, banner } = req.body;
   if (!userId) return res.status(400).json({ error: 'User ID required' });
   const users = readDB('users') || [];
   const idx = users.findIndex(u => String(u.id) === String(userId));
   if (idx === -1) return res.status(404).json({ error: 'User not found' });
+  if (banner !== undefined || avatar !== undefined) {
+    if (maintenance.assetUploadsBlocked) return res.status(503).json({ error: 'Asset uploads disabled' });
+  }
   if (bio !== undefined) users[idx].bio = String(bio).substring(0, 500);
   // Remove the 500 char limit on avatar from this endpoint just in case it's used
   if (avatar !== undefined) users[idx].avatar = String(avatar);
+  if (banner !== undefined) users[idx].banner = String(banner);
   writeDB('users', users);
   const { password, ...safe } = users[idx];
   res.json(safe);

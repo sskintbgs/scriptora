@@ -13,7 +13,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 // --- MONGODB IMPORTS ---
-import { connectDB, User, Script, Ticket, Notification, Log, Transcript, Visitor } from './src/db.js';
+import { connectDB, User, Script, Ticket, Notification, Log, Transcript, Visitor, Maintenance } from './src/db.js';
 
 // --- DISCORD BOT ---
 import { startBot } from './bot/bot.js';
@@ -39,7 +39,7 @@ let onlineUsers = new Set();
 // ============================================================
 //  MIDDLEWARE
 // ============================================================
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '5mb' }));
 app.use(cookieParser(SERVER_SECRET));
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: true, credentials: true }));
@@ -130,6 +130,8 @@ app.get('/api/db/:collection', async (req, res) => {
 });
 
 app.post('/api/db/:collection', writeLimiter, checkBanned, async (req, res) => {
+  const m = await Maintenance.findOne({ id: 'global' });
+  if (m?.maintenanceMode) return res.status(503).json({ error: 'Maintenance mode' });
   const { collection } = req.params;
   const Model = modelsMap[collection];
   if (!Model) return res.status(400).json({ error: 'Invalid collection' });
@@ -229,13 +231,52 @@ app.post('/api/admin/delete-all-scripts', writeLimiter, async (req, res) => {
   res.json({ success: true, deletedCount: result.deletedCount });
 });
 
+// --- Maintenance & Storage Management ---
+app.get('/api/admin/maintenance', async (req, res) => {
+  let m = await Maintenance.findOne({ id: 'global' });
+  if (!m) { m = new Maintenance({ id: 'global' }); await m.save(); }
+  res.json(m);
+});
+
+app.post('/api/admin/maintenance', writeLimiter, async (req, res) => {
+  const { adminId, assetUploadsBlocked, maintenanceMode } = req.body;
+  const admin = await User.findOne({ id: adminId });
+  if (!admin || (admin.role !== 'admin' && admin.role !== 'owner')) return res.status(403).json({ error: 'Unauthorized' });
+  
+  let m = await Maintenance.findOne({ id: 'global' });
+  if (!m) m = new Maintenance({ id: 'global' });
+  if (assetUploadsBlocked !== undefined) m.assetUploadsBlocked = assetUploadsBlocked;
+  if (maintenanceMode !== undefined) m.maintenanceMode = maintenanceMode;
+  await m.save();
+  res.json(m);
+});
+
+app.post('/api/admin/purge-assets', writeLimiter, async (req, res) => {
+  const { adminId, type } = req.body; // type: 'banners' | 'avatars' | 'all'
+  const admin = await User.findOne({ id: adminId });
+  if (!admin || admin.role !== 'owner') return res.status(403).json({ error: 'Owner only' });
+
+  const update = {};
+  if (type === 'banners' || type === 'all') update.banner = '';
+  if (type === 'avatars' || type === 'all') update.avatar = '';
+  
+  const result = await User.updateMany({}, { $set: update });
+  res.json({ success: true, count: result.modifiedCount });
+});
+
 app.post('/api/profile/update', writeLimiter, checkBanned, async (req, res) => {
-  const { userId, bio, avatar } = req.body;
+  const m = await Maintenance.findOne({ id: 'global' });
+  if (m?.maintenanceMode) return res.status(503).json({ error: 'Platform is in maintenance mode' });
+  const { userId, bio, avatar, banner } = req.body;
   if (!userId) return res.status(400).json({ error: 'User ID required' });
   const user = await User.findOne({ id: userId });
   if (!user) return res.status(404).json({ error: 'User not found' });
+  if (banner !== undefined || avatar !== undefined) {
+    if (m?.assetUploadsBlocked) return res.status(503).json({ error: 'Asset uploads are currently disabled' });
+  }
   if (bio !== undefined) user.bio = String(bio).substring(0, 500);
   if (avatar !== undefined) user.avatar = String(avatar);
+  if (banner !== undefined) user.banner = String(banner);
   await user.save();
   const safe = user.toObject(); delete safe.password;
   res.json(safe);
