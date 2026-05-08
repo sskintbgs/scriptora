@@ -33,7 +33,14 @@ async function loadFromServer(collection) {
     const res = await fetch(`/api/db/${collection}`);
     if (res.ok) {
       const data = await res.json();
-      localStorage.setItem(collection, JSON.stringify(data));
+      try {
+        localStorage.setItem(collection, JSON.stringify(data));
+      } catch (e) {
+        console.warn(`[DB] LocalStorage full, clearing scripts and logs...`);
+        localStorage.removeItem('scripts');
+        localStorage.removeItem('logs');
+        try { localStorage.setItem(collection, JSON.stringify(data)); } catch {}
+      }
       return data;
     }
   } catch (e) { /* server offline, use cache */ }
@@ -149,6 +156,28 @@ export const api = {
     return getCollection('scripts').find(s => matchId(s.id, id)) || null;
   },
 
+  getUserByUsername: async (username) => {
+    await ensureInit();
+    const users = getCollection('users');
+    // Case-insensitive search
+    const user = users.find(u => u.username?.toLowerCase() === username?.toLowerCase());
+    if (user) {
+      const { password, ...safe } = user;
+      return safe;
+    }
+
+    // Try fetching from server profile endpoint if local cache fails
+    try {
+      const res = await fetch(`/api/profile/${username}`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.user;
+      }
+    } catch (e) {}
+
+    return null;
+  },
+
   incrementViews: async (id) => {
     const scripts = getCollection('scripts');
     const idx = scripts.findIndex(s => matchId(s.id, id));
@@ -163,6 +192,28 @@ export const api = {
   getScriptsByUser: async (userId) => {
     await ensureInit();
     return getCollection('scripts').filter(s => matchId(s.authorId, userId));
+  },
+
+  getScriptsByUsername: async (username) => {
+    await ensureInit();
+    const target = username?.toLowerCase();
+    // Try local filter first
+    const scripts = getCollection('scripts').filter(s => 
+      s.author?.toLowerCase() === target && s.verified
+    );
+    
+    if (scripts.length > 0) return scripts;
+
+    // Try server profile endpoint
+    try {
+      const res = await fetch(`/api/profile/${username}`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.scripts || [];
+      }
+    } catch (e) {}
+
+    return [];
   },
 
   addScript: async (scriptData, user) => {
@@ -393,5 +444,66 @@ export const api = {
       const r = await fetch('/api/heartbeat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uid }) });
       if (r.ok) { const d = await r.json(); return d.online; }
     } catch {} return 0;
+  },
+
+  updateProfileAvatar: async (userId, avatarBase64) => {
+    const res = await fetch('/api/profile/avatar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, avatar: avatarBase64 })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Avatar update failed');
+    await loadFromServer('users');
+    return data;
+  },
+
+  updateProfileBio: async (userId, bio) => {
+    const res = await fetch('/api/profile/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, bio })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Bio update failed');
+    await loadFromServer('users');
+    return data;
+  },
+
+  updateProfileBanner: async (userId, bannerBase64) => {
+    const res = await fetch('/api/profile/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, banner: bannerBase64 })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Banner update failed');
+    await loadFromServer('users');
+    return data;
+  },
+
+  getMaintenance: async () => {
+    const res = await fetch('/api/admin/maintenance');
+    return await res.json();
+  },
+
+  updateMaintenance: async (adminId, settings) => {
+    const res = await fetch('/api/admin/maintenance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminId, ...settings })
+    });
+    return await res.json();
+  },
+
+  purgeAssets: async (adminId, type) => {
+    const res = await fetch('/api/admin/purge-assets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminId, type })
+    });
+    const data = await res.json();
+    await loadFromServer('users');
+    return data;
   }
 };

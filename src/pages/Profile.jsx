@@ -300,14 +300,26 @@ const Profile = () => {
           <ArrowLeft size={15} /> Back to Scripts
         </Link>
 
-        <motion.div className="pf-hero"
+        <motion.div className="pf-hero" style={{ padding: 0, overflow: 'hidden' }}
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           transition={{ ease: [0.16, 1, 0.3, 1] }}>
+          
+          {/* Banner */}
+          <div style={{
+            height: 220, width: '100%',
+            background: profile.banner ? `url("${profile.banner}") center/cover` : 'linear-gradient(135deg, #1e2233, #0f111a)',
+            borderBottom: '1px solid rgba(255,255,255,0.06)'
+          }} />
 
-          <div className="pf-hero-row">
-            <div className="pf-avatar">
-              {profile.username?.charAt(0).toUpperCase()}
-            </div>
+          <div style={{ padding: '0 32px 32px', marginTop: -50, position: 'relative' }}>
+            <div className="pf-hero-row">
+              <div className="pf-avatar" style={{
+                width: 120, height: 120, borderRadius: '32px', border: '6px solid var(--bg-0)',
+                background: profile.avatar ? `url(${profile.avatar}) center/cover` : 'linear-gradient(135deg, #818cf8, #38bdf8)',
+                boxShadow: '0 12px 40px rgba(0,0,0,0.4)'
+              }}>
+                {!profile.avatar && profile.username?.charAt(0).toUpperCase()}
+              </div>
 
             <div className="pf-hero-info">
               <h1 className="pf-username">@{profile.username}</h1>
@@ -330,10 +342,18 @@ const Profile = () => {
                 )}
               </div>
               {profile.joinDate && (
-                <div className="pf-join-date">
+                <div className="pf-join-date" style={{ marginBottom: profile.bio ? '12px' : '0' }}>
                   <Calendar size={12} />
                   Joined {new Date(profile.joinDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </div>
+              )}
+              {profile.bio && (
+                <p style={{
+                  fontSize: '0.88rem', color: '#9aa0bc', lineHeight: 1.6,
+                  margin: '12px 0 16px', maxWidth: '500px', whiteSpace: 'pre-wrap'
+                }}>
+                  {profile.bio}
+                </p>
               )}
               {isOwnProfile && (
                 <Link to="/dashboard" style={{
@@ -355,7 +375,8 @@ const Profile = () => {
               </div>
             ))}
           </div>
-        </motion.div>
+        </div>
+      </motion.div>
 
         <motion.div className="pf-section"
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}

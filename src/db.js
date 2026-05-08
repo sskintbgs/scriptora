@@ -35,6 +35,7 @@ const userSchema = new mongoose.Schema({
   createdAt: { type: String },
   bio: { type: String, default: '' },
   avatar: { type: String, default: '' },
+  banner: { type: String, default: '' },
   badges: { type: Array, default: [] },
   following: { type: Array, default: [] },
   followers: { type: Array, default: [] },
@@ -90,6 +91,12 @@ const visitorSchema = new mongoose.Schema({
   count: { type: Number, default: 0 }
 });
 
+const maintenanceSchema = new mongoose.Schema({
+  id: { type: String, default: 'global' },
+  maintenanceMode: { type: Boolean, default: false },
+  assetUploadsBlocked: { type: Boolean, default: false }
+});
+
 const User = mongoose.model('users', userSchema);
 const Script = mongoose.model('scripts', scriptSchema);
 const Ticket = mongoose.model('tickets', ticketSchema);
@@ -97,5 +104,6 @@ const Notification = mongoose.model('notifications', notificationSchema);
 const Log = mongoose.model('logs', logSchema);
 const Transcript = mongoose.model('transcripts', transcriptSchema);
 const Visitor = mongoose.model('visitors', visitorSchema);
+const Maintenance = mongoose.model('maintenance', maintenanceSchema);
 
-export { connectDB, User, Script, Ticket, Notification, Log, Transcript, Visitor };
+export { connectDB, User, Script, Ticket, Notification, Log, Transcript, Visitor, Maintenance };
