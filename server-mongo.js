@@ -68,8 +68,14 @@ async function checkBanned(req, res, next) {
   const { userId } = req.body;
   if (userId) {
     const user = await User.findOne({ id: userId });
-    if (user && user.banned) {
-      return res.status(403).json({ error: 'This account has been banned.', banned: true });
+    if (user) {
+      if (user.banned) {
+        return res.status(403).json({ error: user.banReason ? `This account has been banned: ${user.banReason}` : 'This account has been banned.', banned: true });
+      }
+      if (user.timeoutUntil && Date.now() < user.timeoutUntil) {
+        const remainingHours = Math.ceil((user.timeoutUntil - Date.now()) / (1000 * 60 * 60));
+        return res.status(403).json({ error: `This account is temporarily suspended for ${remainingHours} more hours. Reason: ${user.timeoutReason || 'None'}`, banned: true });
+      }
     }
   }
   next();
@@ -503,7 +509,11 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
   const { username, password } = req.body;
   const user = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
   if (!user || !bcrypt.compareSync(password, user.password || '')) return res.status(401).json({ error: 'Invalid password' });
-  if (user.banned) return res.status(403).json({ error: 'This account has been banned.' });
+  if (user.banned) return res.status(403).json({ error: user.banReason ? `This account has been banned: ${user.banReason}` : 'This account has been banned.' });
+  if (user.timeoutUntil && Date.now() < user.timeoutUntil) {
+    const remainingHours = Math.ceil((user.timeoutUntil - Date.now()) / (1000 * 60 * 60));
+    return res.status(403).json({ error: `This account is temporarily suspended for ${remainingHours} more hours. Reason: ${user.timeoutReason || 'None'}` });
+  }
   const safe = user.toObject(); delete safe.password;
   res.json(safe);
 });
@@ -539,7 +549,61 @@ app.post('/api/auth/admin-reset-password', writeLimiter, async (req, res) => {
   res.json({ success: true });
 });
 
+app.post('/api/badges/grant', writeLimiter, async (req, res) => {
+  const { adminId, targetUserId, badge } = req.body;
+  if (!adminId || !targetUserId || !badge) return res.status(400).json({ error: 'Missing fields' });
+  const admin = await User.findOne({ id: adminId });
+  if (!admin || !['admin', 'owner'].includes(admin.role)) return res.status(403).json({ error: 'Unauthorized' });
+  
+  const targetUser = await User.findOne({ id: targetUserId });
+  if (!targetUser) return res.status(404).json({ error: 'Target user not found' });
+  
+  if (!targetUser.badges) targetUser.badges = [];
+  if (!targetUser.badges.includes(badge)) {
+    targetUser.badges.push(badge);
+    await targetUser.save();
+  }
+  res.json({ success: true, badges: targetUser.badges });
+});
+
+app.post('/api/badges/revoke', writeLimiter, async (req, res) => {
+  const { adminId, targetUserId, badge } = req.body;
+  if (!adminId || !targetUserId || !badge) return res.status(400).json({ error: 'Missing fields' });
+  const admin = await User.findOne({ id: adminId });
+  if (!admin || !['admin', 'owner'].includes(admin.role)) return res.status(403).json({ error: 'Unauthorized' });
+  
+  const targetUser = await User.findOne({ id: targetUserId });
+  if (!targetUser) return res.status(404).json({ error: 'Target user not found' });
+  
+  if (targetUser.badges) {
+    targetUser.badges = targetUser.badges.filter(b => b !== badge);
+    await targetUser.save();
+  }
+  res.json({ success: true, badges: targetUser.badges });
+});
+
 app.get('/api/admin/ip-stats', (req, res) => res.json({ totalTrackedIPs: ipTracker.size, activeClearances: clearanceTokens.size, pendingChallenges: challengeStore.size, ips: [] }));
+
+app.post('/api/notify/followers', writeLimiter, async (req, res) => {
+  const { userId, username, scriptTitle } = req.body;
+  if (!userId) return res.status(400).json({ error: 'User ID required' });
+  const user = await User.findOne({ id: userId });
+  if (!user || !user.followers || user.followers.length === 0) return res.json({ success: true, notified: 0 });
+  
+  const notifications = user.followers.map(followerId => ({
+    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+    userId: followerId,
+    type: `New Script: ${username} posted "${scriptTitle}"`,
+    read: false,
+    date: new Date().toISOString()
+  }));
+  
+  if (notifications.length > 0) {
+    await Notification.insertMany(notifications);
+  }
+  
+  res.json({ success: true, notified: notifications.length });
+});
 
 setInterval(() => {
   const now = Date.now();

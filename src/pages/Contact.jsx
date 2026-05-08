@@ -24,12 +24,28 @@ const Contact = () => {
   const [form, setForm] = useState({ subject: '', message: '', category: 'general' });
   const chatEnd = useRef(null);
 
-  useEffect(() => { if (user) loadTickets(); }, [user]);
-  useEffect(() => { chatEnd.current?.scrollIntoView({ behavior: 'smooth' }); }, [activeTicket?.messages]);
-
   const loadTickets = async () => {
-    try { const r = await fetch(`/api/tickets/user/${user.id}`); if (r.ok) setTickets(await r.json()); } catch {}
+    try { 
+      const r = await fetch(`/api/tickets/user/${user.id}`); 
+      if (r.ok) {
+        const data = await r.json();
+        setTickets(data);
+        setActiveTicket(prev => prev ? data.find(t => t.id === prev.id) || null : null);
+      }
+    } catch {}
   };
+
+  useEffect(() => { 
+    if (user) {
+      loadTickets(); 
+      const iv = setInterval(loadTickets, 3000);
+      return () => clearInterval(iv);
+    }
+  }, [user]);
+
+  useEffect(() => { 
+    chatEnd.current?.scrollIntoView({ behavior: 'smooth' }); 
+  }, [activeTicket?.messages]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -143,24 +159,26 @@ const Contact = () => {
           </div>
 
           {/* Messages */}
-          <div style={{ padding: '12px 14px', maxHeight: '380px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ padding: '16px 20px', maxHeight: '450px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', background: 'var(--bg-color)' }}>
             {activeTicket.messages.map(msg => (
-              <div key={msg.id} style={{ alignSelf: msg.isStaff ? 'flex-start' : 'flex-end', maxWidth: '78%' }}>
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={msg.id} style={{ alignSelf: msg.isStaff ? 'flex-start' : 'flex-end', maxWidth: '78%' }}>
                 <div style={{
-                  padding: '8px 12px',
-                  borderRadius: msg.isStaff ? '2px 10px 10px 10px' : '10px 2px 10px 10px',
-                  background: msg.isStaff ? 'rgba(16,185,129,0.06)' : 'rgba(99,102,241,0.06)',
-                  border: `1px solid ${msg.isStaff ? 'rgba(16,185,129,0.12)' : 'rgba(99,102,241,0.12)'}`,
+                  padding: '10px 14px',
+                  borderRadius: msg.isStaff ? '4px 16px 16px 16px' : '16px 4px 16px 16px',
+                  background: msg.isStaff ? 'rgba(16,185,129,0.1)' : 'var(--primary-color)',
+                  color: msg.isStaff ? 'var(--text-color)' : '#fff',
+                  border: msg.isStaff ? '1px solid rgba(16,185,129,0.2)' : 'none',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                 }}>
-                  <div style={{ display: 'flex', gap: '5px', alignItems: 'center', marginBottom: '2px' }}>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: msg.isStaff ? '#10b981' : '#6366f1' }}>
-                      {msg.isStaff && <Shield size={9} style={{ marginRight: '2px', verticalAlign: 'middle' }} />}{msg.username}
+                  <div style={{ display: 'flex', gap: '5px', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: msg.isStaff ? '#10b981' : 'rgba(255,255,255,0.9)' }}>
+                      {msg.isStaff && <Shield size={10} style={{ marginRight: '3px', verticalAlign: 'middle' }} />}{msg.username}
                     </span>
-                    <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>{new Date(msg.date).toLocaleString()}</span>
+                    <span style={{ fontSize: '0.6rem', color: msg.isStaff ? 'var(--text-muted)' : 'rgba(255,255,255,0.7)' }}>{new Date(msg.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                   </div>
-                  <p style={{ margin: 0, fontSize: '0.82rem', lineHeight: 1.45, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{msg.text}</p>
+                  <p style={{ margin: 0, fontSize: '0.88rem', lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{msg.text}</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
             <div ref={chatEnd} />
           </div>

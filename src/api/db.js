@@ -380,23 +380,114 @@ export const api = {
     addLog('Role Updated', actor || 'system', `${users[idx].username} → ${role}`);
   },
 
-  warnUser: async (userId, actor) => {
+  warnUser: async (userId, actor, reason) => {
     const users = getCollection('users');
     const idx = users.findIndex(u => matchId(u.id, userId));
     if (idx === -1) throw new Error('User not found');
     users[idx].warnings = (users[idx].warnings || 0) + 1;
+    users[idx].warningReasons = users[idx].warningReasons || [];
+    users[idx].warningReasons.push({ reason: reason || 'No reason provided', date: new Date().toISOString(), by: actor || 'system', id: Date.now() });
     await saveToServer('users', users);
-    addLog('User Warned', actor || 'system', `${users[idx].username} warning #${users[idx].warnings}`);
+    addLog('User Warned', actor || 'system', `${users[idx].username} warning #${users[idx].warnings}: ${reason || 'No reason'}`);
   },
 
-  banUser: async (userId, actor) => {
+  removeWarning: async (userId, actor, warningId) => {
+    const users = getCollection('users');
+    const idx = users.findIndex(u => matchId(u.id, userId));
+    if (idx === -1) throw new Error('User not found');
+    if (users[idx].warnings > 0) {
+      users[idx].warnings--;
+      if (users[idx].warningReasons) {
+        if (warningId) {
+          users[idx].warningReasons = users[idx].warningReasons.filter(w => w.id !== warningId);
+        } else {
+          users[idx].warningReasons.pop();
+        }
+      }
+      await saveToServer('users', users);
+      addLog('Warning Removed', actor || 'system', `Removed warning from ${users[idx].username}`);
+    }
+  },
+
+  wipeAllWarnings: async (userId, actor) => {
+    const users = getCollection('users');
+    const idx = users.findIndex(u => matchId(u.id, userId));
+    if (idx === -1) throw new Error('User not found');
+    users[idx].warnings = 0;
+    users[idx].warningReasons = [];
+    await saveToServer('users', users);
+    addLog('Warnings Wiped', actor || 'system', `Wiped all warnings from ${users[idx].username}`);
+  },
+
+  resetProfilePictures: async (userId, actor) => {
+    const users = getCollection('users');
+    const idx = users.findIndex(u => matchId(u.id, userId));
+    if (idx === -1) throw new Error('User not found');
+    users[idx].avatar = '';
+    users[idx].banner = '';
+    await saveToServer('users', users);
+    addLog('Profile Reset', actor || 'system', `Reset avatar and banner for ${users[idx].username}`);
+  },
+
+  timeoutUser: async (userId, actor, reason, days = 1) => {
+    const users = getCollection('users');
+    const idx = users.findIndex(u => matchId(u.id, userId));
+    if (idx === -1) throw new Error('User not found');
+    if (users[idx].role === 'owner') throw new Error('Cannot timeout owner');
+    users[idx].timeoutUntil = Date.now() + (days * 24 * 60 * 60 * 1000);
+    users[idx].timeoutReason = reason || 'No reason provided';
+    await saveToServer('users', users);
+    addLog('User Timeout', actor || 'system', `Timed out ${users[idx].username} for ${days} days. Reason: ${reason}`);
+  },
+
+  updateReputation: async (userId, actor, amount, reason) => {
+    const users = getCollection('users');
+    const idx = users.findIndex(u => matchId(u.id, userId));
+    if (idx === -1) throw new Error('User not found');
+    users[idx].reputation = (users[idx].reputation || 0) + amount;
+    users[idx].repLog = users[idx].repLog || [];
+    users[idx].repLog.unshift({ amount, reason, date: new Date().toISOString(), by: actor });
+    await saveToServer('users', users);
+    addLog('Reputation Updated', actor || 'system', `Changed ${users[idx].username}'s reputation by ${amount}. Reason: ${reason}`);
+  },
+
+  banUser: async (userId, actor, reason) => {
     const users = getCollection('users');
     const idx = users.findIndex(u => matchId(u.id, userId));
     if (idx === -1) throw new Error('User not found');
     if (users[idx].role === 'owner') throw new Error('Cannot ban owner');
     users[idx].banned = !users[idx].banned;
+    if (users[idx].banned) {
+      users[idx].banReason = reason || 'No reason provided';
+    } else {
+      users[idx].banReason = null;
+    }
     await saveToServer('users', users);
-    addLog(users[idx].banned ? 'User Banned' : 'User Unbanned', actor || 'system', users[idx].username);
+    addLog(users[idx].banned ? 'User Banned' : 'User Unbanned', actor || 'system', users[idx].username + (users[idx].banned ? ` (${reason || 'No reason'})` : ''));
+  },
+
+  grantBadge: async (adminId, targetUserId, badge) => {
+    const res = await fetch('/api/badges/grant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminId, targetUserId, badge })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to grant badge');
+    await loadFromServer('users');
+    return data;
+  },
+
+  revokeBadge: async (adminId, targetUserId, badge) => {
+    const res = await fetch('/api/badges/revoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminId, targetUserId, badge })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to revoke badge');
+    await loadFromServer('users');
+    return data;
   },
 
   // =================== LOGGING ===================

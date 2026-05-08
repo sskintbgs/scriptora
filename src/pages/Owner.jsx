@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api/db';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, Users, Activity, AlertTriangle, Ban, CheckCircle, Key, Search, Shield, Eye, ThumbsUp, Globe, Star, MessageSquare, TrendingUp, RefreshCw } from 'lucide-react';
+import { ShieldAlert, Users, Activity, AlertTriangle, Ban, CheckCircle, Key, Search, Shield, Eye, ThumbsUp, Globe, Star, MessageSquare, TrendingUp, RefreshCw, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -48,8 +48,9 @@ const Owner = () => {
   };
 
   const handleWarn = async (id) => {
-    if (!window.confirm('Warn this user?')) return;
-    try { await api.warnUser(id, user.username); toast.success('User warned'); refreshData(); }
+    const reason = window.prompt('Enter warning reason:');
+    if (reason === null) return;
+    try { await api.warnUser(id, user.username, reason); toast.success('User warned'); refreshData(); }
     catch (err) { toast.error(err.message); }
   };
 
@@ -57,10 +58,16 @@ const Owner = () => {
     const target = users.find(u => u.id === id);
     const action = target?.banned ? 'unban' : 'ban';
     
-    if (!window.confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} this user?`)) return;
+    let reason = '';
+    if (!target?.banned) {
+      reason = window.prompt('Enter ban reason (optional):');
+      if (reason === null) return;
+    } else {
+      if (!window.confirm(`Unban this user?`)) return;
+    }
     
     try { 
-      await api.banUser(id, user.username); 
+      await api.banUser(id, user.username, reason); 
       
       // If banning (not unbanning), ask to delete all posts
       if (!target?.banned) {
@@ -71,6 +78,19 @@ const Owner = () => {
       }
       
       toast.success(`User ${action}ned`); 
+      refreshData(); 
+    }
+    catch (err) { toast.error(err.message); }
+  };
+
+  const handleTimeout = async (id) => {
+    const days = window.prompt('Enter timeout duration in days (e.g. 1):', '1');
+    if (!days || isNaN(days)) return;
+    const reason = window.prompt('Enter timeout reason:');
+    if (reason === null) return;
+    try { 
+      await api.timeoutUser(id, user.username, reason, parseFloat(days)); 
+      toast.success(`User timed out for ${days} days`); 
       refreshData(); 
     }
     catch (err) { toast.error(err.message); }
@@ -261,6 +281,7 @@ const Owner = () => {
                             <option value="admin">Admin</option>
                           </select>
                           <button className="btn btn-secondary" style={{ padding: '4px 8px' }} onClick={() => handleWarn(u.id)} title="Warn"><AlertTriangle size={12} className="text-warning" /></button>
+                          <button className="btn btn-secondary" style={{ padding: '4px 8px' }} onClick={() => handleTimeout(u.id)} title="Timeout"><Clock size={12} className="text-warning" /></button>
                           <button className="btn btn-danger" style={{ padding: '4px 8px' }} onClick={() => handleBan(u.id)} title={u.banned ? "Unban" : "Ban"}>
                             {u.banned ? <CheckCircle size={12} /> : <Ban size={12} />}
                           </button>

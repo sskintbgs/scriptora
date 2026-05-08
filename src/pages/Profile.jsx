@@ -3,7 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { api } from '../api/db';
 import { useAuth } from '../context/AuthContext';
-import { Code, Eye, ThumbsUp, Star, Calendar, Shield, MessageSquare, ArrowLeft, ExternalLink, RefreshCw } from 'lucide-react';
+import { Code, Eye, ThumbsUp, Star, Calendar, Shield, MessageSquare, ArrowLeft, ExternalLink, RefreshCw, Trash2, Ban, AlertTriangle, Award, Mail, Fingerprint, Clock, Image, XCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import ScriptCard from '../components/ScriptCard';
 
 const CSS = `
@@ -227,6 +228,7 @@ const Profile = () => {
     { label: 'Likes',    value: totalLikes,                  color: '#34d399', icon: <ThumbsUp size={10} /> },
     ...(avgRating ? [{ label: 'Avg Rating', value: avgRating, color: '#fbbf24', icon: <Star size={10} /> }] : []),
     { label: 'Comments', value: totalComments,               color: '#c084fc', icon: <MessageSquare size={10} /> },
+    { label: 'Reputation', value: profile?.reputation || 0,   color: '#fbbf24', icon: <Star size={10} /> },
     { label: 'Verified', value: verified,                    color: '#34d399', icon: <Shield size={10} /> },
   ];
 
@@ -332,6 +334,14 @@ const Profile = () => {
                     <Shield size={9} /> {profile.role}
                   </span>
                 )}
+                {profile.badges?.map(badge => (
+                  <span key={badge} className="pf-role-badge" style={{
+                    background: 'rgba(255,255,255,0.05)', color: '#eaedf8',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                  }}>
+                    <Award size={9} /> {badge}
+                  </span>
+                ))}
                 {verified > 0 && (
                   <span className="pf-role-badge" style={{
                     background: 'rgba(52,211,153,0.1)', color: '#34d399',
@@ -377,6 +387,188 @@ const Profile = () => {
           </div>
         </div>
       </motion.div>
+ 
+        {/* Admin Panel */}
+        {(currentUser?.role === 'admin' || currentUser?.role === 'owner') && !isOwnProfile && (
+          <motion.div className="pf-section" style={{
+            background: 'rgba(239,68,68,0.03)', border: '1px solid rgba(239,68,68,0.1)',
+            borderRadius: '18px', padding: '24px', marginBottom: '28px'
+          }} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            
+            <div className="pf-section-head">
+              <h2 style={{ color: '#f87171' }}><Shield size={18} /> Admin Oversight</h2>
+              {profile.banned && <span className="badge" style={{ background: '#ef4444', color: '#fff' }}>BANNED</span>}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#525878', textTransform: 'uppercase', letterSpacing: '0.05em' }}>User Identity</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', color: '#9aa0bc' }}><Mail size={14} style={{ opacity: 0.5 }} /> {profile.email || 'No email provided'}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', color: '#9aa0bc' }}><Fingerprint size={14} style={{ opacity: 0.5 }} /> ID: {profile.id}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', color: '#9aa0bc' }}><AlertTriangle size={14} style={{ opacity: 0.5 }} /> Warnings: {profile.warnings || 0}</div>
+               </div>
+
+               <div>
+                  <div style={{ fontSize: '0.75rem', color: '#525878', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Account Controls</div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button className="pf-action-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', borderColor: '#ef4444', color: '#ef4444', background: 'rgba(239,68,68,0.05)' }}
+                      onClick={async () => {
+                        let reason = '';
+                        if (!profile.banned) {
+                          reason = window.prompt('Enter ban reason (optional):');
+                          if (reason === null) return;
+                        } else {
+                          if (!window.confirm('Unban this user?')) return;
+                        }
+                        await api.banUser(profile.id, currentUser.username, reason);
+                        load();
+                        toast.success(profile.banned ? 'User Unbanned' : 'User Banned');
+                      }}>
+                      <Ban size={14} /> {profile.banned ? 'Unban' : 'Ban User'}
+                    </button>
+                    
+                    <button className="pf-action-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', borderColor: '#fbbf24', color: '#fbbf24', background: 'rgba(245,158,11,0.05)' }}
+                      onClick={async () => {
+                        const days = window.prompt('Enter timeout duration in days (e.g. 1):', '1');
+                        if (!days || isNaN(days)) return;
+                        const reason = window.prompt('Enter timeout reason:');
+                        if (reason === null) return;
+                        await api.timeoutUser(profile.id, currentUser.username, reason, parseFloat(days));
+                        load();
+                        toast.success(`User timed out for ${days} days`);
+                      }}>
+                      <Clock size={14} /> Timeout
+                    </button>
+
+                    <button className="pf-action-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', borderColor: '#fbbf24', color: '#fbbf24', background: 'rgba(245,158,11,0.05)' }}
+                      onClick={async () => {
+                        const reason = window.prompt('Enter warning reason:');
+                        if (reason === null) return;
+                        await api.warnUser(profile.id, currentUser.username, reason);
+                        load();
+                        toast.success('User Warned');
+                      }}>
+                      <AlertTriangle size={14} /> Warn
+                    </button>
+
+                    <button className="pf-action-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', borderColor: '#a855f7', color: '#a855f7', background: 'rgba(168,85,247,0.05)' }}
+                      onClick={async () => {
+                        if (!window.confirm('Wipe all warnings for this user?')) return;
+                        await api.wipeAllWarnings(profile.id, currentUser.username);
+                        load();
+                        toast.success('Warnings wiped');
+                      }}>
+                      <XCircle size={14} /> Wipe Warnings
+                    </button>
+
+                    <button className="pf-action-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', borderColor: '#3b82f6', color: '#3b82f6', background: 'rgba(59,130,246,0.05)' }}
+                      onClick={async () => {
+                        if (!window.confirm('Reset this users avatar and banner?')) return;
+                        await api.resetProfilePictures(profile.id, currentUser.username);
+                        load();
+                        toast.success('Profile pictures reset');
+                      }}>
+                      <Image size={14} /> Reset Avatar
+                    </button>
+
+                    <button className="pf-action-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', borderColor: '#10b981', color: '#10b981', background: 'rgba(16,185,129,0.05)' }}
+                      onClick={async () => {
+                        const amount = window.prompt('Enter reputation amount (+ or -):', '1');
+                        if (!amount || isNaN(amount)) return;
+                        const reason = window.prompt('Enter reason for reputation change:');
+                        if (reason === null) return;
+                        await api.updateReputation(profile.id, currentUser.username, parseInt(amount), reason);
+                        load();
+                        toast.success(`Reputation updated by ${amount}`);
+                      }}>
+                      <Star size={14} /> Edit Rep
+                    </button>
+
+                    <button className="pf-action-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', borderColor: '#3b82f6', color: '#3b82f6', background: 'rgba(59,130,246,0.05)' }}
+                      onClick={async () => {
+                        const badge = window.prompt('Enter badge name to grant (e.g. VIP, Trusted):');
+                        if (!badge) return;
+                        const repStr = window.prompt(`How much reputation to award for getting the "${badge}" badge? (e.g. 6)`, '6');
+                        if (repStr === null) return;
+                        const rep = parseInt(repStr) || 0;
+                        try {
+                          await api.grantBadge(currentUser.id, profile.id, badge);
+                          if (rep !== 0) {
+                            await api.updateReputation(profile.id, currentUser.username, rep, `Awarded ${badge} badge`);
+                          }
+                          load();
+                          toast.success(`Badge "${badge}" granted${rep !== 0 ? ` with +${rep} rep!` : '!'}`);
+                        } catch(err) {
+                          toast.error(err.message);
+                        }
+                      }}>
+                      <Award size={14} /> Grant Badge
+                    </button>
+
+                    <button className="pf-action-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', borderColor: '#ef4444', color: '#ef4444', background: 'rgba(239,68,68,0.05)' }}
+                      onClick={async () => {
+                        if (!window.confirm('DELETE ALL SCRIPTS? This cannot be undone.')) return;
+                        const count = await api.deleteAllUserScripts(currentUser.id, profile.id);
+                        load();
+                        toast.success(`Deleted ${count} scripts`);
+                      }}>
+                      <Trash2 size={14} /> Clear All Scripts
+                    </button>
+                  </div>
+               </div>
+            </div>
+
+            {profile.warningReasons?.length > 0 && (
+              <div style={{ marginTop: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', padding: '16px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ fontSize: '0.75rem', color: '#525878', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Active Warnings</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {profile.warningReasons.map((w, idx) => (
+                    <div key={w.id || idx} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px', background: 'rgba(245,158,11,0.05)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(245,158,11,0.1)' }}>
+                      <div>
+                        <div style={{ fontSize: '0.85rem', color: '#eaedf8' }}>{w.reason}</div>
+                        <div style={{ fontSize: '0.7rem', color: '#9aa0bc', marginTop: '4px' }}>By {w.by} on {new Date(w.date).toLocaleDateString()}</div>
+                      </div>
+                      <button className="pf-action-btn" style={{ padding: '4px 8px', fontSize: '0.7rem', borderColor: '#34d399', color: '#34d399', background: 'rgba(52,211,153,0.1)' }}
+                        onClick={async () => {
+                          if (!window.confirm('Remove this warning?')) return;
+                          await api.removeWarning(profile.id, currentUser.username, w.id);
+                          load();
+                          toast.success('Warning Removed');
+                        }}>
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px', marginTop: '20px' }}>
+
+               <div style={{ fontSize: '0.75rem', color: '#525878', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Badge Management</div>
+               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {['trusted', 'og', 'vip', 'contributor', 'staff', 'developer', 'verified', 'supporter'].map(badge => {
+                    const has = profile.badges?.includes(badge);
+                    return (
+                      <button key={badge} className="pf-action-btn" style={{ 
+                        padding: '6px 10px', fontSize: '0.7rem', textTransform: 'capitalize',
+                        background: has ? 'rgba(52,211,153,0.1)' : 'rgba(255,255,255,0.03)',
+                        borderColor: has ? '#34d399' : 'rgba(255,255,255,0.1)',
+                        color: has ? '#34d399' : '#525878'
+                      }} onClick={async () => {
+                        if (has) await api.revokeBadge(currentUser.id, profile.id, badge);
+                        else await api.grantBadge(currentUser.id, profile.id, badge);
+                        load();
+                        toast.success(`Badge ${has ? 'Revoked' : 'Granted'}`);
+                      }}>
+                        {has ? '✓ ' : '+ '} {badge}
+                      </button>
+                    );
+                  })}
+               </div>
+            </div>
+          </motion.div>
+        )}
 
         <motion.div className="pf-section"
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}

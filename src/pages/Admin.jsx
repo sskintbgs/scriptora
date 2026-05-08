@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../api/db';
 import { useAuth } from '../context/AuthContext';
 import { Shield, ShieldAlert, CheckCircle, Edit, Trash2, X, Save, Eye, ThumbsUp, XCircle, Search, MessageSquare, Star, Key, Unlock, Filter, ArrowLeft, Send, Tag, Clock, UserCheck } from 'lucide-react';
@@ -21,16 +21,32 @@ const Admin = () => {
   const [activeTicket, setActiveTicket] = useState(null);
   const [ticketReply, setTicketReply] = useState('');
   const [ticketFilter, setTicketFilter] = useState('all');
+  const chatEnd = useRef(null);
   const isSupport = user?.role === 'support' || user?.role === 'admin' || user?.role === 'owner';
+
+  useEffect(() => { 
+    chatEnd.current?.scrollIntoView({ behavior: 'smooth' }); 
+  }, [activeTicket?.messages]);
 
   useEffect(() => {
     if (user?.role === 'admin' || user?.role === 'owner') refreshScripts();
-    if (isSupport) loadTickets();
+    if (isSupport) {
+      loadTickets();
+      const iv = setInterval(loadTickets, 3000);
+      return () => clearInterval(iv);
+    }
   }, [user]);
 
   const refreshScripts = () => api.getAllScripts().then(s => setScripts(s || []));
   const loadTickets = async () => {
-    try { const r = await fetch(`/api/tickets?userId=${user.id}`); if(r.ok) setTickets(await r.json()); } catch{}
+    try { 
+      const r = await fetch(`/api/tickets?userId=${user.id}`); 
+      if(r.ok) {
+        const data = await r.json();
+        setTickets(data);
+        setActiveTicket(prev => prev ? data.find(t => t.id === prev.id) || null : null);
+      }
+    } catch{}
   };
 
   const handleVerify = async (id) => {
@@ -217,18 +233,19 @@ const Admin = () => {
                   </div>
                 </div>
               </div>
-              <div style={{ padding:'14px 18px', maxHeight:'380px', overflowY:'auto', display:'flex', flexDirection:'column', gap:'8px', background:'var(--bg-color)' }}>
+              <div style={{ padding:'16px 20px', maxHeight:'450px', overflowY:'auto', display:'flex', flexDirection:'column', gap:'10px', background:'var(--bg-color)' }}>
                 {activeTicket.messages.map(msg => (
-                  <div key={msg.id} style={{ alignSelf: msg.isStaff ? 'flex-end' : 'flex-start', maxWidth:'75%' }}>
-                    <div style={{ padding:'9px 13px', borderRadius: msg.isStaff ? '12px 4px 12px 12px' : '4px 12px 12px 12px', background: msg.isStaff ? 'rgba(16,185,129,0.08)' : 'rgba(99,102,241,0.08)', border:`1px solid ${msg.isStaff ? 'rgba(16,185,129,0.15)' : 'rgba(99,102,241,0.15)'}` }}>
-                      <div style={{ display:'flex', gap:'5px', alignItems:'center', marginBottom:'3px' }}>
-                        <span style={{ fontSize:'0.7rem', fontWeight:600, color: msg.isStaff ? 'var(--success)' : 'var(--primary-color)' }}>{msg.isStaff && '🛡️ '}{msg.username}</span>
-                        <span className="text-muted" style={{ fontSize:'0.58rem' }}>{new Date(msg.date).toLocaleString()}</span>
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={msg.id} style={{ alignSelf: msg.isStaff ? 'flex-end' : 'flex-start', maxWidth:'75%' }}>
+                    <div style={{ padding:'10px 14px', borderRadius: msg.isStaff ? '16px 4px 16px 16px' : '4px 16px 16px 16px', background: msg.isStaff ? 'var(--primary-color)' : 'var(--bg-color-lighter)', color: msg.isStaff ? '#fff' : 'var(--text-color)', border: msg.isStaff ? 'none' : '1px solid var(--border-color)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                      <div style={{ display:'flex', gap:'5px', alignItems:'center', marginBottom:'4px' }}>
+                        <span style={{ fontSize:'0.72rem', fontWeight:700, color: msg.isStaff ? 'rgba(255,255,255,0.9)' : 'var(--primary-color)' }}>{msg.isStaff && <Shield size={10} style={{ marginRight: '3px', verticalAlign: 'middle' }} />}{msg.username}</span>
+                        <span style={{ fontSize:'0.6rem', color: msg.isStaff ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)' }}>{new Date(msg.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                       </div>
-                      <p style={{ fontSize:'0.84rem', lineHeight:1.5, margin:0, wordBreak:'break-word', whiteSpace:'pre-wrap' }}>{msg.text}</p>
+                      <p style={{ fontSize:'0.88rem', lineHeight:1.5, margin:0, wordBreak:'break-word', whiteSpace:'pre-wrap' }}>{msg.text}</p>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
+                <div ref={chatEnd} />
               </div>
               {activeTicket.status !== 'closed' && (
                 <div style={{ padding:'10px 18px', borderTop:'1px solid var(--border-color)', display:'flex', gap:'8px', background:'var(--bg-color-lighter)' }}>
