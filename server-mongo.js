@@ -13,7 +13,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 // --- MONGODB IMPORTS ---
-import { connectDB, User, Script, Ticket, Notification, Log, Transcript, Visitor, Maintenance } from './src/db.js';
+import { connectDB, User, Script, Ticket, Notification, Log, Transcript, Visitor, Maintenance, Key, App, KeyLog } from './src/db.js';
 
 // --- DISCORD BOT ---
 import { startBot } from './bot/bot.js';
@@ -35,6 +35,15 @@ const ipTracker = new Map();
 const challengeStore = new Map();
 const clearanceTokens = new Set();
 let onlineUsers = new Set(); 
+const KEY_SYSTEM_SECRET = process.env.KEY_SYSTEM_SECRET || 'scriptora_secret_key_32_chars_long!!';
+const usedNonces = new Set();
+const challenges = new Map(); // Store challenges for secure key validation
+// Periodically clear nonces and expired challenges (every 5 mins)
+setInterval(() => {
+  usedNonces.clear();
+  const now = Date.now();
+  for (const [k, v] of challenges.entries()) { if (v.expires < now) challenges.delete(k); }
+}, 300000);
 
 // ============================================================
 //  MIDDLEWARE
@@ -104,7 +113,7 @@ function trackIP(ip) {
 
 function signToken(data) { return crypto.createHmac('sha256', SERVER_SECRET).update(data).digest('hex'); }
 
-const modelsMap = { users: User, scripts: Script, logs: Log, tickets: Ticket, transcripts: Transcript, notifications: Notification };
+const modelsMap = { users: User, scripts: Script, logs: Log, tickets: Ticket, transcripts: Transcript, notifications: Notification, keys: Key, apps: App };
 
 // ============================================================
 //  HEALTH CHECK  (keep-alive ping target)
@@ -612,6 +621,337 @@ setInterval(() => {
     if (data.requests.length === 0 && data.banned_until < now) ipTracker.delete(ip);
   });
 }, 300000);
+
+// ============================================================
+//  KEY SYSTEM API (Secure Key Validation & Management)
+// ============================================================
+
+// Helper: AES Encryption/Decryption
+function getDynamicKey(secret, challenge) {
+  // Derive a unique key for THIS specific request session
+  return crypto.createHash('sha256').update(secret + challenge).digest();
+}
+
+function decryptData(encryptedData, secret, challenge) {
+  try {
+    const { iv, content, authTag } = encryptedData;
+    const key = challenge ? getDynamicKey(secret, challenge) : Buffer.from(secret.padEnd(32).slice(0, 32));
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(iv, 'hex'));
+    decipher.setAuthTag(Buffer.from(authTag, 'hex'));
+    let decrypted = decipher.update(content, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return JSON.parse(decrypted);
+  } catch (err) {
+    return null;
+  }
+}
+
+function encryptData(data, secret, challenge) {
+  const iv = crypto.randomBytes(12);
+  const key = challenge ? getDynamicKey(secret, challenge) : Buffer.from(secret.padEnd(32).slice(0, 32));
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  let encrypted = cipher.update(JSON.stringify(data), 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const authTag = cipher.getAuthTag().toString('hex');
+  return { iv: iv.toString('hex'), content: encrypted, authTag };
+}
+
+// App Management Endpoints
+app.get('/api/apps', async (req, res) => {
+  const ownerId = req.headers['x-user-id'];
+  const user = await User.findOne({ id: ownerId });
+  if (!user || user.role !== 'owner') return res.status(403).json({ error: 'Owner only' });
+  const apps = await App.find({ ownerId }).sort({ createdAt: -1 }).lean();
+  res.json(apps);
+});
+
+app.post('/api/apps/create', writeLimiter, async (req, res) => {
+  const { ownerId, name } = req.body;
+  const user = await User.findOne({ id: ownerId });
+  if (!user || user.role !== 'owner') return res.status(403).json({ error: 'Owner only' });
+
+  const newApp = new App({
+    id: uuidv4().slice(0, 8),
+    name: name || 'Unnamed App',
+    secret: crypto.randomBytes(24).toString('hex'),
+    ownerId,
+    status: 'active'
+  });
+  await newApp.save();
+  res.json(newApp);
+});
+
+app.post('/api/apps/update-version', writeLimiter, async (req, res) => {
+  const { ownerId, appId, version, downloadUrl } = req.body;
+  const user = await User.findOne({ id: ownerId });
+  if (!user || user.role !== 'owner') return res.status(403).json({ error: 'Owner only' });
+  const appDoc = await App.findOne({ id: appId });
+  if (!appDoc) return res.status(404).json({ error: 'App not found' });
+  appDoc.version = version;
+  appDoc.downloadUrl = downloadUrl;
+  await appDoc.save();
+  res.json({ success: true });
+});
+
+app.get('/api/keylogs', async (req, res) => {
+  const ownerId = req.headers['x-user-id'];
+  const user = await User.findOne({ id: ownerId });
+  if (!user || user.role !== 'owner') return res.status(403).json({ error: 'Owner only' });
+  const logs = await KeyLog.find().sort({ timestamp: -1 }).limit(100);
+  res.json(logs);
+});
+
+app.post('/api/apps/toggle', writeLimiter, async (req, res) => {
+  const { ownerId, appId } = req.body;
+  const user = await User.findOne({ id: ownerId });
+  if (!user || user.role !== 'owner') return res.status(403).json({ error: 'Owner only' });
+  const appDoc = await App.findOne({ id: appId });
+  if (!appDoc) return res.status(404).json({ error: 'App not found' });
+  appDoc.status = appDoc.status === 'active' ? 'disabled' : 'active';
+  await appDoc.save();
+  res.json({ success: true, status: appDoc.status });
+});
+
+app.post('/api/apps/rotate-secret', writeLimiter, async (req, res) => {
+  const { ownerId, appId } = req.body;
+  const user = await User.findOne({ id: ownerId });
+  if (!user || user.role !== 'owner') return res.status(403).json({ error: 'Owner only' });
+
+  const appDoc = await App.findOne({ id: appId, ownerId });
+  if (!appDoc) return res.status(404).json({ error: 'App not found' });
+
+  appDoc.secret = crypto.randomBytes(24).toString('hex');
+  await appDoc.save();
+  res.json({ success: true, secret: appDoc.secret });
+});
+
+app.post('/api/apps/delete', writeLimiter, async (req, res) => {
+  const { ownerId, appId } = req.body;
+  const user = await User.findOne({ id: ownerId });
+  if (!user || user.role !== 'owner') return res.status(403).json({ error: 'Owner only' });
+
+  await App.deleteOne({ id: appId, ownerId });
+  await Key.deleteMany({ appId });
+  res.json({ success: true });
+});
+
+// Owner Management Endpoints
+app.get('/api/keys', async (req, res) => {
+  const ownerId = req.headers['x-user-id'];
+  const user = await User.findOne({ id: ownerId });
+  if (!user || user.role !== 'owner') return res.status(403).json({ error: 'Owner only' });
+  const keys = await Key.find({}).sort({ createdAt: -1 }).lean();
+  res.json(keys);
+});
+
+app.post('/api/keys/create', writeLimiter, async (req, res) => {
+  const { ownerId, appId, note, expiresAt, duration, count, level, isOneTime } = req.body;
+  const user = await User.findOne({ id: ownerId });
+  if (!user || user.role !== 'owner') return res.status(403).json({ error: 'Owner only' });
+  if (!appId) return res.status(400).json({ error: 'App ID required' });
+
+  const numToGen = Math.min(Math.max(parseInt(count) || 1, 1), 100); 
+  const generatedKeys = [];
+
+  let expirationDate = expiresAt ? new Date(expiresAt) : null;
+  if (duration && duration !== 'lifetime') {
+    const now = new Date();
+    const [val, unit] = duration.split(' ');
+    const amount = parseInt(val);
+    if (unit?.includes('min')) now.setMinutes(now.getMinutes() + amount);
+    else if (unit?.includes('hour')) now.setHours(now.getHours() + amount);
+    else if (unit?.includes('day')) now.setDate(now.getDate() + amount);
+    else if (unit?.includes('month')) now.setMonth(now.getMonth() + amount);
+    expirationDate = now;
+  }
+
+  for (let i = 0; i < numToGen; i++) {
+    const newKey = new Key({
+      key: `SCR-${crypto.randomBytes(16).toString('hex').toUpperCase()}`,
+      appId,
+      ownerId,
+      note: note || '',
+      expiresAt: expirationDate,
+      level: level || 'standard',
+      isOneTime: !!isOneTime,
+      status: 'active'
+    });
+    generatedKeys.push(newKey);
+  }
+
+  await Key.insertMany(generatedKeys);
+  res.json({ success: true, count: generatedKeys.length, keys: generatedKeys });
+});
+
+app.post('/api/keys/reset', writeLimiter, async (req, res) => {
+  const { ownerId, key } = req.body;
+  const user = await User.findOne({ id: ownerId });
+  if (!user || user.role !== 'owner') return res.status(403).json({ error: 'Owner only' });
+
+  const keyDoc = await Key.findOne({ key });
+  if (!keyDoc) return res.status(404).json({ error: 'Key not found' });
+
+  keyDoc.hwid = null;
+  await keyDoc.save();
+  res.json({ success: true, message: 'HWID reset successfully' });
+});
+
+app.post('/api/keys/revoke', writeLimiter, async (req, res) => {
+  const { ownerId, key, status } = req.body; // status: 'revoked' or 'active'
+  const user = await User.findOne({ id: ownerId });
+  if (!user || user.role !== 'owner') return res.status(403).json({ error: 'Owner only' });
+
+  const keyDoc = await Key.findOne({ key });
+  if (!keyDoc) return res.status(404).json({ error: 'Key not found' });
+
+  keyDoc.status = status || 'revoked';
+  await keyDoc.save();
+  res.json({ success: true, status: keyDoc.status });
+});
+
+app.post('/api/keys/delete', writeLimiter, async (req, res) => {
+  const { ownerId, key } = req.body;
+  const user = await User.findOne({ id: ownerId });
+  if (!user || user.role !== 'owner') return res.status(403).json({ error: 'Owner only' });
+
+  await Key.deleteOne({ key });
+  res.json({ success: true });
+});
+
+// Step 1: Request Challenge
+app.post('/api/keys/challenge', async (req, res) => {
+  const { appId, key } = req.body;
+  if (!appId || !key) return res.status(400).json({ error: 'App ID and Key required' });
+
+  const appDoc = await App.findOne({ id: appId });
+  if (!appDoc || appDoc.status !== 'active') return res.status(403).json({ error: 'Invalid app' });
+
+  const challenge = crypto.randomBytes(16).toString('hex');
+  const sessionKey = `${req.ip}:${key}`;
+  challenges.set(sessionKey, { challenge, expires: Date.now() + 60000 }); // 1 min TTL
+
+  res.json({ challenge });
+});
+
+// Step 2: Secure Validation Endpoint
+app.post('/api/keys/validate', async (req, res) => {
+  const { appId, payload } = req.body;
+  if (!appId || !payload) return res.status(400).json({ error: 'App ID and payload required' });
+
+  // 0. Find App to get Secret
+  const appDoc = await App.findOne({ id: appId });
+  if (!appDoc || appDoc.status !== 'active') return res.status(403).json({ error: 'App disabled or not found' });
+
+  // 0. Preliminary Decryption (Need to peek at the key/challenge inside if we didn't have challenge first)
+  // But our flow is: Step 1 (Challenge) -> Step 2 (Validate with Challenge)
+  // We use the challenge to derive the key.
+  
+  // To decrypt Step 2, the client must have used Step 1's challenge.
+  // BUT we don't know the 'key' yet to find the challenge in our Map.
+  // So the client must send the 'key' in plain text OR we use the AppSecret as base.
+  // Actually, we'll have the client send { appId, key, payload } where payload is encrypted with derived key.
+  
+  // Helper to log attempts
+  const logAttempt = async (success, error = '', level = '') => {
+    await KeyLog.create({ appId, key: key || 'unknown', hwid: data?.hwid || 'unknown', ip: req.ip, success, error, level });
+  };
+
+  const { key, payload: encryptedPayload } = req.body;
+  if (!key || !encryptedPayload) {
+    await logAttempt(false, 'Missing key or payload');
+    return res.status(400).json({ error: 'Key and payload required' });
+  }
+
+  const sessionKey = `${req.ip}:${key}`;
+  const stored = challenges.get(sessionKey);
+  if (!stored) {
+    await logAttempt(false, 'No active challenge session');
+    return res.status(403).json({ error: 'No active session. Request challenge first.' });
+  }
+
+  const data = decryptData(encryptedPayload, appDoc.secret, stored.challenge);
+  if (!data) {
+    await logAttempt(false, 'Decryption failed (Possible tampering)');
+    return res.status(400).json({ error: 'Invalid or forged request' });
+  }
+
+  const { hwid, nonce, timestamp, challenge } = data;
+
+  // 1. Verify Challenge
+  if (stored.challenge !== challenge) {
+    await logAttempt(false, 'Challenge mismatch');
+    return res.status(403).json({ error: 'Challenge mismatch.' });
+  }
+  const currentChallenge = stored.challenge;
+  challenges.delete(sessionKey); 
+
+  // 2. Check Nonce (Replay Protection)
+  if (usedNonces.has(nonce)) {
+    return res.status(403).json({ error: 'Replay attack detected' });
+  }
+  usedNonces.add(nonce);
+
+  // 3. Check Timestamp (Request Freshness - 5 min window)
+  const now = Date.now();
+  if (!timestamp || Math.abs(now - timestamp) > 300000) {
+    return res.status(403).json({ error: 'Request expired' });
+  }
+
+  // 5. Check if Key exists and is active
+  const keyDoc = await Key.findOne({ key, appId });
+  if (!keyDoc) {
+    await logAttempt(false, 'Key not found', '');
+    return res.status(403).json({ error: 'Invalid key' });
+  }
+  if (keyDoc.status !== 'active') {
+    await logAttempt(false, `Key status is ${keyDoc.status}`, keyDoc.level);
+    return res.status(403).json({ error: `Key is ${keyDoc.status}` });
+  }
+
+  // 6. Check Expiration
+  if (keyDoc.expiresAt && keyDoc.expiresAt < now) {
+    keyDoc.status = 'expired';
+    await keyDoc.save();
+    await logAttempt(false, 'Key expired', keyDoc.level);
+    return res.status(403).json({ error: 'Key has expired' });
+  }
+
+  // 6. HWID Check/Lock
+  if (!keyDoc.hwid) {
+    keyDoc.hwid = hwid;
+    await keyDoc.save();
+  } else if (keyDoc.hwid !== hwid) {
+    await logAttempt(false, 'HWID mismatch', keyDoc.level);
+    return res.status(403).json({ error: 'HWID mismatch. Key is locked to another device.' });
+  }
+
+  // 7. Success - Return encrypted response
+  keyDoc.lastUsed = new Date();
+  
+  // If one-time use, revoke immediately after success
+  if (keyDoc.isOneTime) {
+    keyDoc.status = 'revoked';
+  }
+  
+  await keyDoc.save();
+  await logAttempt(true, '', keyDoc.level);
+
+  const response = {
+    success: true,
+    message: 'Key validated successfully',
+    app: appDoc.name,
+    version: appDoc.version || '1.0.0',
+    downloadUrl: appDoc.downloadUrl || '',
+    level: keyDoc.level || 'standard',
+    expiresAt: keyDoc.expiresAt,
+    isOneTime: keyDoc.isOneTime,
+    timestamp: Date.now(),
+    sessionToken: crypto.randomBytes(32).toString('hex'),
+    integrity: crypto.createHash('sha256').update(key + currentChallenge + appDoc.secret).digest('hex')
+  };
+
+  res.json({ payload: encryptData(response, appDoc.secret, currentChallenge) });
+});
 
 // ============================================================
 //  BOT DASHBOARD API

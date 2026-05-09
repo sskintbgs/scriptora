@@ -97,6 +97,42 @@ const maintenanceSchema = new mongoose.Schema({
   assetUploadsBlocked: { type: Boolean, default: false }
 });
 
+const keySchema = new mongoose.Schema({
+  key: { type: String, required: true, unique: true },
+  appId: { type: String, required: true },
+  ownerId: { type: String, required: true },
+  hwid: { type: String, default: null },
+  status: { type: String, default: 'active' }, // active, revoked, expired
+  level: { type: String, default: 'standard' }, // free, premium, vip, etc.
+  isOneTime: { type: Boolean, default: false },
+  note: { type: String, default: '' },
+  createdAt: { type: Date, default: Date.now },
+  expiresAt: { type: Date, default: null },
+  lastUsed: { type: Date, default: null }
+}, { strict: false });
+
+const appSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  secret: { type: String, required: true },
+  ownerId: { type: String, required: true },
+  status: { type: String, default: 'active' }, // active, disabled
+  version: { type: String, default: '1.0.0' },
+  downloadUrl: { type: String, default: '' },
+  createdAt: { type: Date, default: Date.now }
+}, { strict: false });
+
+const keyLogSchema = new mongoose.Schema({
+  appId: { type: String, required: true },
+  key: { type: String, required: true },
+  hwid: { type: String },
+  ip: { type: String },
+  success: { type: Boolean, required: true },
+  error: { type: String },
+  level: { type: String },
+  timestamp: { type: Date, default: Date.now }
+});
+
 const User = mongoose.model('users', userSchema);
 const Script = mongoose.model('scripts', scriptSchema);
 const Ticket = mongoose.model('tickets', ticketSchema);
@@ -105,5 +141,8 @@ const Log = mongoose.model('logs', logSchema);
 const Transcript = mongoose.model('transcripts', transcriptSchema);
 const Visitor = mongoose.model('visitors', visitorSchema);
 const Maintenance = mongoose.model('maintenance', maintenanceSchema);
+const Key = mongoose.model('keys', keySchema);
+const AppModel = mongoose.model('apps', appSchema);
+const KeyLog = mongoose.model('keylogs', keyLogSchema);
 
-export { connectDB, User, Script, Ticket, Notification, Log, Transcript, Visitor, Maintenance };
+export { connectDB, User, Script, Ticket, Notification, Log, Transcript, Visitor, Maintenance, Key, AppModel as App, KeyLog };

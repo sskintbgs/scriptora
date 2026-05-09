@@ -596,5 +596,106 @@ export const api = {
     const data = await res.json();
     await loadFromServer('users');
     return data;
+  },
+
+  // =================== KEY SYSTEM ===================
+  getApps: async (ownerId) => {
+    const res = await fetch('/api/apps', {
+      headers: { 'x-user-id': ownerId }
+    });
+    if (!res.ok) throw new Error('Failed to fetch apps');
+    return await res.json();
+  },
+
+  createApp: async (ownerId, name) => {
+    const res = await fetch('/api/apps/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerId, name })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create app');
+    addLog('App Created', 'owner', `Created new app: ${name}`);
+    return data;
+  },
+
+  rotateAppSecret: async (ownerId, appId) => {
+    const res = await fetch('/api/apps/rotate-secret', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerId, appId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to rotate secret');
+    addLog('App Secret Rotated', 'owner', `Rotated secret for app #${appId}`);
+    return data;
+  },
+
+  deleteApp: async (ownerId, appId) => {
+    const res = await fetch('/api/apps/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerId, appId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to delete app');
+    addLog('App Deleted', 'owner', `Deleted app #${appId}`);
+    return data;
+  },
+
+  getKeys: async (ownerId) => {
+    const res = await fetch('/api/keys', {
+      headers: { 'x-user-id': ownerId }
+    });
+    if (!res.ok) throw new Error('Failed to fetch keys');
+    return await res.json();
+  },
+
+  createKey: async (ownerId, appId, note, expiresAt, duration, count, level, isOneTime) => {
+    const res = await fetch('/api/keys/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerId, appId, note, expiresAt, duration, count, level, isOneTime })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create keys');
+    addLog('Keys Generated', 'owner', `Generated ${data.count} keys (${level}) for app #${appId}`);
+    return data;
+  },
+
+  resetKeyHWID: async (ownerId, key) => {
+    const res = await fetch('/api/keys/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerId, key })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to reset HWID');
+    addLog('Key HWID Reset', 'owner', `Reset HWID for key ${key}`);
+    return data;
+  },
+
+  revokeKey: async (ownerId, key, status) => {
+    const res = await fetch('/api/keys/revoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerId, key, status })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update key status');
+    addLog('Key Status Updated', 'owner', `Updated status for key ${key} to ${status}`);
+    return data;
+  },
+
+  deleteKey: async (ownerId, key) => {
+    const res = await fetch('/api/keys/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerId, key })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to delete key');
+    addLog('Key Deleted', 'owner', `Deleted key ${key}`);
+    return data;
   }
 };

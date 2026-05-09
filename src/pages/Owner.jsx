@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api/db';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, Users, Activity, AlertTriangle, Ban, CheckCircle, Key, Search, Shield, Eye, ThumbsUp, Globe, Star, MessageSquare, TrendingUp, RefreshCw, Clock } from 'lucide-react';
+import { ShieldAlert, Users, Activity, AlertTriangle, Ban, CheckCircle, Key, Search, Shield, Eye, ThumbsUp, Globe, Star, MessageSquare, TrendingUp, RefreshCw, Clock, Layers, Fingerprint, Trash2, Copy, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -10,11 +10,20 @@ const Owner = () => {
   const [users, setUsers] = useState([]);
   const [logs, setLogs] = useState([]);
   const [stats, setStats] = useState({});
-  const [searchQuery, setSearchQuery] = useState('');
+  const [userSearch, setUserSearch] = useState('');
   const [logFilter, setLogFilter] = useState('all');
   const [logSearch, setLogSearch] = useState('');
   const [activeSection, setActiveSection] = useState('overview');
   const [userFilter, setUserFilter] = useState('all');
+  const [keys, setKeys] = useState([]);
+  const [keySearch, setKeySearch] = useState('');
+  const [keyFilter, setKeyFilter] = useState('all'); 
+  const [keyAppFilter, setKeyAppFilter] = useState('all'); // New: Filter keys by app
+  const [apps, setApps] = useState([]);
+  const [appLogs, setAppLogs] = useState([]); 
+  const [appSearch, setAppSearch] = useState('');
+  const [userAppFilter, setUserAppFilter] = useState('all'); // New: Filter users by app usage
+  const [showSecret, setShowSecret] = useState({}); // { appId: true/false }
 
   useEffect(() => {
     if (user?.role === 'owner' || user?.role === 'admin') refreshData();
@@ -27,6 +36,19 @@ const Owner = () => {
     setUsers(fetchedUsers);
     setLogs(fetchedLogs);
     setStats(fetchedStats);
+    
+    if (user?.role === 'owner') {
+      try {
+        const [fetchedKeys, fetchedApps, fetchedKeyLogs] = await Promise.all([
+          api.getKeys(user.id),
+          api.getApps(user.id),
+          fetch('/api/keylogs', { headers: { 'x-user-id': user.id } }).then(r => r.json())
+        ]);
+        setKeys(fetchedKeys);
+        setApps(fetchedApps);
+        setAppLogs(fetchedKeyLogs || []);
+      } catch (err) { console.error(err); }
+    }
   };
 
   if (user?.role !== 'owner' && user?.role !== 'admin') {
@@ -96,6 +118,124 @@ const Owner = () => {
     catch (err) { toast.error(err.message); }
   };
 
+  const handleCreateKey = async () => {
+    if (apps.length === 0) return toast.error("Create an App first!");
+    
+    const appNames = apps.map((a, i) => `${i + 1}. ${a.name} (${a.id})`).join('\n');
+    const appChoice = prompt(`Select an App (number):\n${appNames}`, "1");
+    if (!appChoice) return;
+    
+    const selectedApp = apps[parseInt(appChoice) - 1];
+    if (!selectedApp) return toast.error("Invalid choice");
+
+    const count = prompt("How many keys to generate?", "1");
+    if (!count || isNaN(count)) return;
+
+    const durations = ["30 mins", "1 hour", "1 day", "7 days", "30 days", "lifetime"];
+    const durationChoice = prompt(`Select Duration (number):\n${durations.map((d, i) => `${i + 1}. ${d}`).join('\n')}`, "3");
+    const duration = durations[parseInt(durationChoice) - 1] || "1 day";
+
+    const levels = ["Free", "Standard", "Premium", "VIP", "Owner"];
+    const levelChoice = prompt(`Select Level (number):\n${levels.map((l, i) => `${i + 1}. ${l}`).join('\n')}`, "2");
+    const level = (levels[parseInt(levelChoice) - 1] || "Standard").toLowerCase();
+
+    const isOneTime = confirm("Is this a one-time use key? (Revokes after first validation)");
+
+    const note = prompt("Enter a note for these keys (optional):");
+    
+    try {
+      await api.createKey(user.id, selectedApp.id, note || '', null, duration, parseInt(count), level, isOneTime);
+      toast.success(`Generated ${count} ${level} keys successfully!`);
+      refreshData();
+    } catch (err) { toast.error(err.message); }
+  };
+
+  const handleCreateApp = async () => {
+    const name = prompt("Enter App Name:");
+    if (!name) return;
+    try {
+      await api.createApp(user.id, name);
+      toast.success("App created!");
+      refreshData();
+    } catch (err) { toast.error(err.message); }
+  };
+
+  const handleToggleAppStatus = async (appId) => {
+    try {
+      const res = await fetch('/api/apps/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ownerId: user.id, appId })
+      });
+      if (!res.ok) throw new Error("Failed to toggle app");
+      toast.success("App status updated");
+      refreshData();
+    } catch (err) { toast.error(err.message); }
+  };
+
+  const handleUpdateAppVersion = async (appId, currentVersion, currentUrl) => {
+    const version = prompt("Enter new version (e.g. 1.0.1):", currentVersion);
+    if (!version) return;
+    const downloadUrl = prompt("Enter new download URL:", currentUrl);
+    if (downloadUrl === null) return;
+    
+    try {
+      const res = await fetch('/api/apps/update-version', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ownerId: user.id, appId, version, downloadUrl })
+      });
+      if (!res.ok) throw new Error("Failed to update version");
+      toast.success("App version updated!");
+      refreshData();
+    } catch (err) { toast.error(err.message); }
+  };
+
+  const handleRotateSecret = async (appId) => {
+    if (!confirm("Are you sure? All existing scripts for this app will need the NEW secret to work!")) return;
+    try {
+      await api.rotateAppSecret(user.id, appId);
+      toast.success("Secret rotated!");
+      refreshData();
+    } catch (err) { toast.error(err.message); }
+  };
+
+  const handleDeleteApp = async (appId, appName) => {
+    if (!confirm(`Permanently delete App "${appName}"? THIS WILL DELETE ALL KEYS FOR THIS APP.`)) return;
+    try {
+      await api.deleteApp(user.id, appId);
+      toast.success("App deleted");
+      refreshData();
+    } catch (err) { toast.error(err.message); }
+  };
+
+  const handleResetHWID = async (key) => {
+    if (!confirm(`Reset HWID for key ${key}?`)) return;
+    try {
+      await api.resetKeyHWID(user.id, key);
+      toast.success("HWID reset successfully");
+      refreshData();
+    } catch (err) { toast.error(err.message); }
+  };
+
+  const handleToggleKey = async (key, currentStatus) => {
+    const newStatus = currentStatus === 'active' ? 'revoked' : 'active';
+    try {
+      await api.revokeKey(user.id, key, newStatus);
+      toast.success(`Key ${newStatus === 'active' ? 'activated' : 'revoked'}`);
+      refreshData();
+    } catch (err) { toast.error(err.message); }
+  };
+
+  const handleDeleteKey = async (key) => {
+    if (!confirm(`Permanently delete key ${key}?`)) return;
+    try {
+      await api.deleteKey(user.id, key);
+      toast.success("Key deleted");
+      refreshData();
+    } catch (err) { toast.error(err.message); }
+  };
+
   const handleResetPassword = async (id) => {
     const newPassword = prompt("New password (min 6 chars):");
     if (!newPassword) return;
@@ -106,10 +246,10 @@ const Owner = () => {
   const isOwner = user?.role === 'owner';
   
   const filteredUsers = users.filter(u => {
-    const matchSearch = u.username.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      String(u.id).includes(searchQuery) ||
-      u.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (u.email || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchSearch = u.username.toLowerCase().includes(userSearch.toLowerCase()) || 
+      String(u.id).includes(userSearch) ||
+      u.role.toLowerCase().includes(userSearch.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(userSearch.toLowerCase());
     const matchFilter = userFilter === 'all' ? true : 
       userFilter === 'admin' ? u.role === 'admin' :
       userFilter === 'banned' ? u.banned :
@@ -126,9 +266,31 @@ const Owner = () => {
     return matchFilter && matchSearch;
   });
 
+  const filteredApps = apps.filter(a => 
+    a.name.toLowerCase().includes(appSearch.toLowerCase()) ||
+    a.id.toLowerCase().includes(appSearch.toLowerCase())
+  );
+
   const adminCount = users.filter(u => u.role === 'admin').length;
   const bannedCount = users.filter(u => u.banned).length;
   const warnedCount = users.filter(u => (u.warnings || 0) > 0).length;
+
+  const filteredKeysList = keys.filter(k => {
+    const matchesSearch = k.key.toLowerCase().includes(keySearch.toLowerCase());
+    const matchesStatus = keyFilter === 'all' || (keyFilter === 'used' ? k.lastUsed : !k.lastUsed);
+    const matchesApp = keyAppFilter === 'all' || k.appId === keyAppFilter;
+    return matchesSearch && matchesStatus && matchesApp;
+  });
+
+  const filteredUsersList = users.filter(u => {
+    const matchesSearch = u.username.toLowerCase().includes(userSearch.toLowerCase()) || u.id.includes(userSearch);
+    const matchesRole = userFilter === 'all' || 
+      (userFilter === 'admin' ? u.role === 'admin' :
+       userFilter === 'banned' ? u.banned :
+       userFilter === 'warned' ? (u.warnings || 0) > 0 : u.role === userFilter);
+    const matchesApp = userAppFilter === 'all' || keys.some(k => k.appId === userAppFilter && k.hwid === u.hwid);
+    return matchesSearch && matchesRole && matchesApp;
+  });
 
   return (
     <div className="container" style={{ padding: '40px 16px' }}>
@@ -173,8 +335,10 @@ const Owner = () => {
         {[
           { key: 'overview', label: 'Overview', icon: <TrendingUp size={14} /> },
           { key: 'users', label: `Users (${users.length})`, icon: <Users size={14} /> },
-          { key: 'logs', label: `Logs (${logs.length})`, icon: <Activity size={14} /> },
-        ].map(t => (
+          { key: 'logs', label: `Activity Logs`, icon: <Activity size={14} /> },
+          { key: 'apps', label: `Apps (${apps.length})`, icon: <Layers size={14} /> },
+          { key: 'keys', label: `Keys (${keys.length})`, icon: <Key size={14} /> },
+        ].filter(t => (t.key !== 'keys' && t.key !== 'apps' && t.key !== 'logs' || isOwner)).map(t => (
           <button key={t.key} className={`btn ${activeSection === t.key ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setActiveSection(t.key)} style={{ padding: '7px 14px', fontSize: '0.82rem' }}>
             {t.icon} {t.label}
@@ -230,16 +394,27 @@ const Owner = () => {
       {activeSection === 'users' && (
         <motion.div className="admin-table-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <div style={{ padding: '12px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-color-lighter)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              {['all', 'admin', 'banned', 'warned'].map(f => (
-                <button key={f} className={`btn ${userFilter === f ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => setUserFilter(f)} style={{ padding: '4px 10px', fontSize: '0.78rem', textTransform: 'capitalize' }}>{f}</button>
-              ))}
-            </div>
-            <div style={{ position: 'relative' }}>
-              <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input type="text" className="input-field" placeholder="Search users..." value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)} style={{ paddingLeft: '30px', maxWidth: '220px', margin: 0, fontSize: '0.82rem' }} />
+            <div className="section-header" style={{ width: '100%', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                <h2 style={{ margin: 0, fontSize: '1rem' }}>User Management</h2>
+                <div style={{ position: 'relative' }}>
+                  <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input type="text" className="input-field" placeholder="Search users..." value={userSearch}
+                    onChange={e => setUserSearch(e.target.value)} style={{ paddingLeft: '30px', maxWidth: '200px', margin: 0, fontSize: '0.82rem' }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <select className="input-field" value={userAppFilter} onChange={e => setUserAppFilter(e.target.value)} style={{ margin: 0, fontSize: '0.82rem', padding: '4px 12px' }}>
+                  <option value="all">All Apps</option>
+                  {apps.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+                <select className="input-field" value={userFilter} onChange={e => setUserFilter(e.target.value)} style={{ margin: 0, fontSize: '0.82rem', padding: '4px 12px' }}>
+                  <option value="all">All Roles</option>
+                  <option value="owner">Owner</option>
+                  <option value="admin">Admin</option>
+                  <option value="user">User</option>
+                </select>
+              </div>
             </div>
           </div>
           <table className="admin-table">
@@ -249,7 +424,7 @@ const Owner = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map(u => (
+              {filteredUsersList.map(u => (
                 <tr key={u.id}>
                   <td style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>#{u.id}</td>
                   <td style={{ fontWeight: 500, fontSize: '0.88rem' }}>{u.username}</td>
@@ -327,6 +502,183 @@ const Owner = () => {
               ))}
               {filteredLogs.length === 0 && (
                 <tr><td colSpan="4" style={{ textAlign: 'center', padding: '32px' }} className="text-muted">No logs found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </motion.div>
+      )}
+
+      {/* Apps */}
+      {activeSection === 'apps' && isOwner && (
+        <motion.div className="admin-table-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <div style={{ padding: '12px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-color-lighter)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <button className="btn btn-primary" onClick={handleCreateApp} style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+              + Create New App
+            </button>
+            <div style={{ position: 'relative' }}>
+              <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <input type="text" className="input-field" placeholder="Search apps..." value={appSearch}
+                onChange={e => setAppSearch(e.target.value)} style={{ paddingLeft: '30px', maxWidth: '200px', margin: 0, fontSize: '0.82rem' }} />
+            </div>
+          </div>
+          <table className="admin-table">
+            <thead>
+              <tr><th>App Name</th><th>App ID</th><th>Shared Secret</th><th>Keys</th><th>Created</th><th style={{ textAlign: 'right' }}>Actions</th></tr>
+            </thead>
+            <tbody>
+              {filteredApps.map(a => (
+                <tr key={a.id}>
+                  <td style={{ fontWeight: 600 }}>{a.name}</td>
+                  <td style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--primary-color)' }}>{a.id}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', background: 'var(--bg-color-dark)', padding: '2px 6px', borderRadius: '4px', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {showSecret[a.id] ? a.secret : '••••••••••••••••'}
+                      </span>
+                      <button className="btn btn-secondary" style={{ padding: '2px 6px' }} onClick={() => setShowSecret(prev => ({ ...prev, [a.id]: !prev[a.id] }))}>
+                        {showSecret[a.id] ? <Eye size={10} /> : <Eye size={10} style={{ opacity: 0.5 }} />}
+                      </button>
+                      {showSecret[a.id] && (
+                        <button className="btn btn-secondary" style={{ padding: '2px 6px' }} onClick={() => { navigator.clipboard.writeText(a.secret); toast.success("Copied!"); }}>
+                          <Copy size={10} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                  <td style={{ fontSize: '0.85rem' }}>{keys.filter(k => k.appId === a.id).length}</td>
+                  <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(a.createdAt).toLocaleDateString()}</td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                      <button className="btn" onClick={() => handleToggleAppStatus(a.id)} title={a.status === 'disabled' ? "Enable App" : "Disable App"}>
+                        {a.status === 'disabled' ? <CheckCircle size={14} className="text-success" /> : <Ban size={14} className="text-warning" />}
+                      </button>
+                      <button className="btn btn-secondary" style={{ padding: '4px 8px' }} onClick={() => handleUpdateAppVersion(a.id, a.version, a.downloadUrl)} title="Update Version">
+                        <Zap size={12} className="text-warning" />
+                      </button>
+                      <button className="btn btn-secondary" style={{ padding: '4px 8px' }} onClick={() => handleRotateSecret(a.id)} title="Rotate Secret">
+                        <Fingerprint size={12} className="text-warning" />
+                      </button>
+                      <button className="btn btn-danger" style={{ padding: '4px 8px' }} onClick={() => handleDeleteApp(a.id, a.name)} title="Delete App">
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filteredApps.length === 0 && (
+                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '32px' }} className="text-muted">No apps found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </motion.div>
+      )}
+
+      {/* Keys */}
+      {activeSection === 'keys' && isOwner && (
+        <motion.div className="admin-table-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <div style={{ padding: '12px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-color-lighter)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button className="btn btn-primary" onClick={handleCreateKey} style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                + Bulk Generate Keys
+              </button>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <select className="input-field" value={keyAppFilter} onChange={e => setKeyAppFilter(e.target.value)} style={{ margin: 0, fontSize: '0.82rem', padding: '4px 12px' }}>
+                  <option value="all">All Apps</option>
+                  {apps.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+                <select className="input-field" value={keyFilter} onChange={e => setKeyFilter(e.target.value)} style={{ margin: 0, fontSize: '0.82rem', padding: '4px 12px' }}>
+                  <option value="all">All Status</option>
+                  <option value="used">Used</option>
+                  <option value="unused">Unused</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ position: 'relative' }}>
+              <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <input type="text" className="input-field" placeholder="Search keys..." value={keySearch}
+                onChange={e => setKeySearch(e.target.value)} style={{ paddingLeft: '30px', maxWidth: '200px', margin: 0, fontSize: '0.82rem' }} />
+            </div>
+          </div>
+          <table className="admin-table">
+            <thead>
+              <tr><th>Key</th><th>App</th><th>Level</th><th>Type</th><th>Note</th><th>HWID</th><th>Status</th><th>Expires</th><th style={{ textAlign: 'right' }}>Actions</th></tr>
+            </thead>
+            <tbody>
+              {filteredKeysList.map(k => (
+                <tr key={k._id || k.key}>
+                  <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--primary-color)' }}>{k.key}</td>
+                  <td style={{ fontSize: '0.75rem', fontWeight: 600 }}>{apps.find(a => a.id === k.appId)?.name || k.appId}</td>
+                  <td>
+                    <span className={`badge ${k.level === 'premium' ? 'verified' : k.level === 'vip' ? 'pending' : ''}`} style={{ fontSize: '0.65rem', textTransform: 'uppercase' }}>
+                      {k.level || 'standard'}
+                    </span>
+                  </td>
+                  <td style={{ fontSize: '0.75rem' }}>
+                    {k.isOneTime ? <span className="text-warning" style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Zap size={10} /> 1-Time</span> : <span className="text-muted">Standard</span>}
+                  </td>
+                  <td style={{ fontSize: '0.85rem' }}>{k.note || '—'}</td>
+                  <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={k.hwid}>
+                    {k.hwid ? k.hwid : <span className="text-muted italic">Not locked</span>}
+                  </td>
+                  <td>
+                    <span className={`badge ${k.status === 'active' ? 'verified' : 'pending'}`} style={{ fontSize: '0.68rem' }}>
+                      {k.status.toUpperCase()}
+                    </span>
+                  </td>
+                  <td style={{ fontSize: '0.78rem' }}>{k.expiresAt ? new Date(k.expiresAt).toLocaleDateString() : 'Never'}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                      <button className="btn btn-secondary" style={{ padding: '4px 8px' }} onClick={() => handleResetHWID(k.key)} title="Reset HWID">
+                        <RefreshCw size={12} />
+                      </button>
+                      <button className="btn btn-secondary" style={{ padding: '4px 8px' }} onClick={() => handleToggleKey(k.key, k.status)} title={k.status === 'active' ? "Revoke" : "Activate"}>
+                        {k.status === 'active' ? <Ban size={12} className="text-danger" /> : <CheckCircle size={12} className="text-success" />}
+                      </button>
+                      <button className="btn btn-secondary" style={{ padding: '4px 8px' }} onClick={() => { navigator.clipboard.writeText(k.key); toast.success("Key copied!"); }} title="Copy Key">
+                        <Copy size={12} />
+                      </button>
+                      <button className="btn btn-danger" style={{ padding: '4px 8px' }} onClick={() => handleDeleteKey(k.key)} title="Delete Key">
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filteredKeysList.length === 0 && (
+                <tr><td colSpan="9" style={{ textAlign: 'center', padding: '32px' }} className="text-muted">No keys found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </motion.div>
+      )}
+      {activeSection === 'logs' && isOwner && (
+        <motion.div className="admin-table-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <div className="section-header" style={{ padding: '16px' }}>
+            <h2 style={{ margin: 0 }}>Security & Activity Logs</h2>
+            <p className="text-muted" style={{ fontSize: '0.8rem' }}>Monitor all validation attempts and flagged hardware IDs.</p>
+          </div>
+          <table className="admin-table">
+            <thead>
+              <tr><th>Timestamp</th><th>App ID</th><th>Key</th><th>IP Address</th><th>HWID</th><th>Status</th><th>Note</th></tr>
+            </thead>
+            <tbody>
+              {appLogs.map((log, i) => (
+                <tr key={i}>
+                  <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(log.timestamp).toLocaleString()}</td>
+                  <td style={{ fontSize: '0.75rem' }}>{log.appId}</td>
+                  <td style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{log.key}</td>
+                  <td style={{ fontSize: '0.75rem' }}>{log.ip}</td>
+                  <td style={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>{log.hwid}</td>
+                  <td>
+                    <span className={`badge ${log.success ? 'verified' : 'banned'}`} style={{ fontSize: '0.65rem' }}>
+                      {log.success ? 'Success' : 'Failed'}
+                    </span>
+                  </td>
+                  <td style={{ fontSize: '0.75rem', color: log.success ? 'inherit' : 'var(--danger)' }}>{log.error || 'N/A'}</td>
+                </tr>
+              ))}
+              {appLogs.length === 0 && (
+                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '32px' }} className="text-muted">No security logs found.</td></tr>
               )}
             </tbody>
           </table>
