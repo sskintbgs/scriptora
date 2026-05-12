@@ -181,9 +181,11 @@ const BulkCopyModal = ({ keyList, onClose }) => {
   const [copiedIdx, setCopiedIdx] = useState(null);
 
   // Guard: ensure keyList is always a safe array of strings
-  const safeKeys = Array.isArray(keyList)
+  const rawKeys = Array.isArray(keyList)
     ? keyList.map(k => (typeof k === 'string' ? k : k?.key || String(k))).filter(Boolean)
     : [];
+  const noKeysFound = rawKeys.length === 1 && rawKeys[0] === '__no_keys_found__';
+  const safeKeys = noKeysFound ? [] : rawKeys;
 
   const handleCopyAll = () => {
     if (!safeKeys.length) return;
@@ -244,9 +246,18 @@ const BulkCopyModal = ({ keyList, onClose }) => {
           background: 'rgba(0,0,0,0.25)', border: '1px solid var(--border-color)',
         }}>
           {safeKeys.length === 0 && (
-            <p style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              No keys to display.
-            </p>
+            <div style={{ textAlign: 'center', padding: '32px' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '8px' }}>
+                {noKeysFound
+                  ? "Keys were created but couldn't be read from the API response."
+                  : 'No keys to display.'}
+              </p>
+              {noKeysFound && (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                  Check the browser console (<kbd style={{ background: 'rgba(255,255,255,0.08)', padding: '1px 5px', borderRadius: '4px', fontFamily: 'monospace' }}>F12</kbd>) for the raw API response — your keys were generated and are visible in the Keys table.
+                </p>
+              )}
+            </div>
           )}
           {safeKeys.map((k, i) => (
             <div key={i} style={{
@@ -454,17 +465,49 @@ const Owner = () => {
   // Inline key gen handler — receives form values from KeyGenPanel
   const handleGenerateKeys = async ({ appId, count, duration, level, isOneTime, note }) => {
     try {
+      // Snapshot existing key strings before generation
+      const existingKeys = new Set(keys.map(k => k.key));
+
       const result = await api.createKey(user.id, appId, note || '', null, duration, count, level, isOneTime);
+      console.log('[KeyGen] raw api.createKey result:', result);
       setShowKeyGenPanel(false);
       toast.success(`Generated ${count} ${level} key${count > 1 ? 's' : ''}!`);
-      await refreshData();
-      // Show bulk copy modal — result should be the array of key strings
-      // Adapt to whatever shape your API returns:
-      const keyStrings = Array.isArray(result)
-        ? result.map(k => (typeof k === 'string' ? k : k.key))
-        : (result?.keys || []);
-      if (keyStrings.length > 0) setBulkCopyKeys(keyStrings);
-    } catch (err) { toast.error(err.message); }
+
+      // Fetch fresh key list FIRST so we can diff it
+      const freshKeys = await api.getKeys(user.id);
+      setKeys(freshKeys);
+      // Also refresh everything else
+      refreshData();
+
+      // Strategy 1: diff — keys that didn't exist before
+      const diffed = freshKeys
+        .map(k => k.key)
+        .filter(k => !existingKeys.has(k));
+
+      // Strategy 2: try to parse raw result in every known shape
+      let fromResult = [];
+      try {
+        const r = result;
+        if (Array.isArray(r)) {
+          fromResult = r.map(k => (typeof k === 'string' ? k : k?.key || k?.value || k?.id)).filter(Boolean);
+        } else if (r && typeof r === 'object') {
+          const arr = r.keys || r.data || r.created || r.result || r.items || [];
+          if (Array.isArray(arr) && arr.length) {
+            fromResult = arr.map(k => (typeof k === 'string' ? k : k?.key || k?.value)).filter(Boolean);
+          } else if (typeof r.key === 'string') {
+            fromResult = [r.key];
+          }
+        }
+      } catch (_) {}
+
+      // Use whichever gives more results
+      const keyStrings = diffed.length >= fromResult.length ? diffed : fromResult;
+
+      // Always open modal regardless — show whatever we found
+      const finalKeys = keyStrings.length > 0 ? keyStrings : diffed;
+      console.log('[KeyGen] showing in modal:', finalKeys);
+      setBulkCopyKeys(finalKeys.length > 0 ? finalKeys : ['__no_keys_found__']);
+    } catch (err) { toast.error(err?.message || 'Generation failed'); }
   };
 
   const handleCreateApp = async () => {
@@ -611,15 +654,15 @@ const Owner = () => {
       {/* Modals */}
       <AnimatePresence>
         {showKeyGenPanel && (
-          <KeyGenPanel
+          <KeyGenPanel key="keygen"
             apps={apps}
             onGenerate={handleGenerateKeys}
             onClose={() => setShowKeyGenPanel(false)}
           />
         )}
         {bulkCopyKeys && (
-          <BulkCopyModal
-            keys={bulkCopyKeys}
+          <BulkCopyModal key="bulkcopy"
+            keyList={bulkCopyKeys}
             onClose={() => setBulkCopyKeys(null)}
           />
         )}
