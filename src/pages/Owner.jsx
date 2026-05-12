@@ -479,34 +479,22 @@ const Owner = () => {
       // Also refresh everything else
       refreshData();
 
-      // Strategy 1: diff — keys that didn't exist before
-      const diffed = freshKeys
-        .map(k => k.key)
-        .filter(k => !existingKeys.has(k));
+      let generatedKeys = [];
+      if (result && Array.isArray(result.keys)) {
+        generatedKeys = result.keys.map(k => typeof k === 'string' ? k : k?.key || k?.value).filter(Boolean);
+      } else if (Array.isArray(result)) {
+        generatedKeys = result.map(k => typeof k === 'string' ? k : k?.key || k?.value).filter(Boolean);
+      }
 
-      // Strategy 2: try to parse raw result in every known shape
-      let fromResult = [];
-      try {
-        const r = result;
-        if (Array.isArray(r)) {
-          fromResult = r.map(k => (typeof k === 'string' ? k : k?.key || k?.value || k?.id)).filter(Boolean);
-        } else if (r && typeof r === 'object') {
-          const arr = r.keys || r.data || r.created || r.result || r.items || [];
-          if (Array.isArray(arr) && arr.length) {
-            fromResult = arr.map(k => (typeof k === 'string' ? k : k?.key || k?.value)).filter(Boolean);
-          } else if (typeof r.key === 'string') {
-            fromResult = [r.key];
-          }
-        }
-      } catch (_) {}
+      // fallback to diff if we couldn't parse the API response
+      if (generatedKeys.length === 0) {
+        generatedKeys = freshKeys
+          .map(k => k.key)
+          .filter(k => !existingKeys.has(k));
+      }
 
-      // Use whichever gives more results
-      const keyStrings = diffed.length >= fromResult.length ? diffed : fromResult;
-
-      // Always open modal regardless — show whatever we found
-      const finalKeys = keyStrings.length > 0 ? keyStrings : diffed;
-      console.log('[KeyGen] showing in modal:', finalKeys);
-      setBulkCopyKeys(finalKeys.length > 0 ? finalKeys : ['__no_keys_found__']);
+      console.log('[KeyGen] showing in modal:', generatedKeys);
+      setBulkCopyKeys(generatedKeys.length > 0 ? generatedKeys : ['__no_keys_found__']);
     } catch (err) { toast.error(err?.message || 'Generation failed'); }
   };
 
