@@ -1,10 +1,253 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api/db';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, Users, Activity, AlertTriangle, Ban, CheckCircle, Key, Search, Shield, Eye, ThumbsUp, Globe, Star, MessageSquare, TrendingUp, RefreshCw, Clock, Layers, Fingerprint, Trash2, Copy, Zap } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ShieldAlert, Users, Activity, AlertTriangle, Ban, CheckCircle, Key, Search, Shield, Eye, ThumbsUp, Globe, Star, MessageSquare, TrendingUp, RefreshCw, Clock, Layers, Fingerprint, Trash2, Copy, Zap, ChevronLeft, ChevronRight, X, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
+// ─── Inline Key Generator Panel ────────────────────────────────────────────────
+const KeyGenPanel = ({ apps, onGenerate, onClose }) => {
+  const [form, setForm] = useState({
+    appId: apps[0]?.id || '',
+    count: 1,
+    duration: '1 day',
+    level: 'standard',
+    isOneTime: false,
+    note: '',
+  });
+
+  const durations = ['30 mins', '1 hour', '1 day', '7 days', '30 days', 'lifetime'];
+  const levels = ['free', 'standard', 'premium', 'vip', 'owner'];
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSubmit = () => {
+    if (!form.appId) return toast.error('Select an app first');
+    if (!form.count || isNaN(form.count) || form.count < 1) return toast.error('Enter a valid count');
+    onGenerate(form);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
+      }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        initial={{ scale: 0.95, y: 16 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.95, y: 16 }}
+        className="glass-card"
+        style={{ width: '100%', maxWidth: '480px', padding: '28px', position: 'relative' }}
+      >
+        <button onClick={onClose} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+          <X size={18} />
+        </button>
+        <h2 style={{ fontSize: '1.1rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Key size={18} className="text-primary" /> Generate Keys
+        </h2>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {/* App */}
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>App</span>
+            <select className="input-field" value={form.appId} onChange={e => set('appId', e.target.value)} style={{ margin: 0 }}>
+              {apps.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          </label>
+
+          {/* Count */}
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quantity</span>
+            <input
+              type="number" min={1} max={500} className="input-field"
+              value={form.count} onChange={e => set('count', parseInt(e.target.value) || 1)}
+              style={{ margin: 0 }}
+            />
+          </label>
+
+          {/* Duration pill selector */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Duration</span>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {durations.map(d => (
+                <button key={d}
+                  className={`btn ${form.duration === d ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ padding: '4px 10px', fontSize: '0.76rem' }}
+                  onClick={() => set('duration', d)}>{d}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Level pill selector */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Level</span>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {levels.map(l => (
+                <button key={l}
+                  className={`btn ${form.level === l ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ padding: '4px 10px', fontSize: '0.76rem', textTransform: 'capitalize' }}
+                  onClick={() => set('level', l)}>{l}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* One-time toggle */}
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none' }}>
+            <div
+              onClick={() => set('isOneTime', !form.isOneTime)}
+              style={{
+                width: '36px', height: '20px', borderRadius: '10px', position: 'relative',
+                background: form.isOneTime ? 'var(--primary-color)' : 'var(--border-color)',
+                transition: 'background 0.2s', flexShrink: 0, cursor: 'pointer'
+              }}
+            >
+              <div style={{
+                position: 'absolute', top: '2px', left: form.isOneTime ? '18px' : '2px',
+                width: '16px', height: '16px', borderRadius: '50%',
+                background: '#fff', transition: 'left 0.2s'
+              }} />
+            </div>
+            <span style={{ fontSize: '0.85rem' }}>One-time use <span className="text-muted">(revokes after first validation)</span></span>
+          </label>
+
+          {/* Note */}
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Note <span style={{ textTransform: 'none', color: 'var(--text-muted)' }}>(optional)</span></span>
+            <input
+              type="text" className="input-field" placeholder="e.g. Giveaway batch #3"
+              value={form.note} onChange={e => set('note', e.target.value)}
+              style={{ margin: 0 }}
+            />
+          </label>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', marginTop: '22px', justifyContent: 'flex-end' }}>
+          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={handleSubmit}>
+            <Zap size={14} /> Generate {form.count > 1 ? `${form.count} Keys` : 'Key'}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// ─── Bulk Copy Modal ─────────────────────────────────────────────────────────
+const BulkCopyModal = ({ keys, onClose }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyAll = () => {
+    navigator.clipboard.writeText(keys.join('\n'));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
+      }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        initial={{ scale: 0.95, y: 16 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.95, y: 16 }}
+        className="glass-card"
+        style={{ width: '100%', maxWidth: '520px', padding: '28px', position: 'relative', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
+      >
+        <button onClick={onClose} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+          <X size={18} />
+        </button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', paddingRight: '24px' }}>
+          <h2 style={{ fontSize: '1.1rem', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CheckCircle size={18} className="text-success" />
+            {keys.length} {keys.length === 1 ? 'Key' : 'Keys'} Generated
+          </h2>
+          <button
+            className={`btn ${copied ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+            onClick={handleCopyAll}
+          >
+            {copied ? <><Check size={13} /> Copied!</> : <><Copy size={13} /> Copy All</>}
+          </button>
+        </div>
+
+        <div style={{
+          overflowY: 'auto', flex: 1,
+          background: 'var(--bg-color-dark)', borderRadius: '8px',
+          border: '1px solid var(--border-color)', padding: '12px'
+        }}>
+          {keys.map((k, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '5px 4px', borderBottom: i < keys.length - 1 ? '1px solid var(--border-color)' : 'none',
+              gap: '8px'
+            }}>
+              <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: 'var(--primary-color)', wordBreak: 'break-all' }}>{k}</span>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '3px 7px', flexShrink: 0 }}
+                onClick={() => { navigator.clipboard.writeText(k); toast.success('Copied!'); }}
+              >
+                <Copy size={11} />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <button className="btn btn-secondary" onClick={onClose} style={{ marginTop: '16px', alignSelf: 'flex-end' }}>
+          Done
+        </button>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// ─── Pagination Component ─────────────────────────────────────────────────────
+const Pagination = ({ total, page, perPage, onPageChange }) => {
+  const totalPages = Math.ceil(total / perPage);
+  if (totalPages <= 1) return null;
+
+  const pages = [];
+  const delta = 2;
+  for (let i = Math.max(1, page - delta); i <= Math.min(totalPages, page + delta); i++) pages.push(i);
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '10px 12px', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)' }}>
+      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginRight: '8px' }}>
+        {Math.min((page - 1) * perPage + 1, total)}–{Math.min(page * perPage, total)} of {total}
+      </span>
+      <button className="btn btn-secondary" style={{ padding: '4px 8px' }} onClick={() => onPageChange(page - 1)} disabled={page === 1}>
+        <ChevronLeft size={14} />
+      </button>
+      {page > delta + 1 && <><button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.78rem' }} onClick={() => onPageChange(1)}>1</button><span className="text-muted" style={{ fontSize: '0.78rem' }}>…</span></>}
+      {pages.map(p => (
+        <button key={p} className={`btn ${p === page ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ padding: '4px 9px', fontSize: '0.78rem', minWidth: '30px' }}
+          onClick={() => onPageChange(p)}>{p}</button>
+      ))}
+      {page < totalPages - delta && <><span className="text-muted" style={{ fontSize: '0.78rem' }}>…</span><button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.78rem' }} onClick={() => onPageChange(totalPages)}>{totalPages}</button></>}
+      <button className="btn btn-secondary" style={{ padding: '4px 8px' }} onClick={() => onPageChange(page + 1)} disabled={page === totalPages}>
+        <ChevronRight size={14} />
+      </button>
+    </div>
+  );
+};
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 const Owner = () => {
   const { user } = useAuth();
   const [users, setUsers] = useState([]);
@@ -17,17 +260,34 @@ const Owner = () => {
   const [userFilter, setUserFilter] = useState('all');
   const [keys, setKeys] = useState([]);
   const [keySearch, setKeySearch] = useState('');
-  const [keyFilter, setKeyFilter] = useState('all'); 
-  const [keyAppFilter, setKeyAppFilter] = useState('all'); // New: Filter keys by app
+  const [keyFilter, setKeyFilter] = useState('all');
+  const [keyAppFilter, setKeyAppFilter] = useState('all');
   const [apps, setApps] = useState([]);
-  const [appLogs, setAppLogs] = useState([]); 
+  const [appLogs, setAppLogs] = useState([]);
   const [appSearch, setAppSearch] = useState('');
-  const [userAppFilter, setUserAppFilter] = useState('all'); // New: Filter users by app usage
-  const [showSecret, setShowSecret] = useState({}); // { appId: true/false }
+  const [userAppFilter, setUserAppFilter] = useState('all');
+  const [showSecret, setShowSecret] = useState({});
+
+  // Pagination state
+  const [keyPage, setKeyPage] = useState(1);
+  const [logPage, setLogPage] = useState(1);
+  const [userPage, setUserPage] = useState(1);
+  const KEY_PER_PAGE = 25;
+  const LOG_PER_PAGE = 50;
+  const USER_PER_PAGE = 20;
+
+  // Modal state
+  const [showKeyGenPanel, setShowKeyGenPanel] = useState(false);
+  const [bulkCopyKeys, setBulkCopyKeys] = useState(null); // array of key strings to show in copy modal
 
   useEffect(() => {
     if (user?.role === 'owner' || user?.role === 'admin') refreshData();
   }, [user]);
+
+  // Reset pages when filters change
+  useEffect(() => { setKeyPage(1); }, [keySearch, keyFilter, keyAppFilter]);
+  useEffect(() => { setLogPage(1); }, [logSearch, logFilter]);
+  useEffect(() => { setUserPage(1); }, [userSearch, userFilter, userAppFilter]);
 
   const refreshData = async () => {
     const [fetchedUsers, fetchedLogs, fetchedStats] = await Promise.all([
@@ -36,7 +296,7 @@ const Owner = () => {
     setUsers(fetchedUsers);
     setLogs(fetchedLogs);
     setStats(fetchedStats);
-    
+
     if (user?.role === 'owner') {
       try {
         const [fetchedKeys, fetchedApps, fetchedKeyLogs] = await Promise.all([
@@ -79,7 +339,6 @@ const Owner = () => {
   const handleBan = async (id) => {
     const target = users.find(u => u.id === id);
     const action = target?.banned ? 'unban' : 'ban';
-    
     let reason = '';
     if (!target?.banned) {
       reason = window.prompt('Enter ban reason (optional):');
@@ -87,22 +346,17 @@ const Owner = () => {
     } else {
       if (!window.confirm(`Unban this user?`)) return;
     }
-    
-    try { 
-      await api.banUser(id, user.username, reason); 
-      
-      // If banning (not unbanning), ask to delete all posts
+    try {
+      await api.banUser(id, user.username, reason);
       if (!target?.banned) {
         if (window.confirm(`User "${target?.username}" has been banned. Do you also want to DELETE ALL their scripts?`)) {
           const deletedCount = await api.deleteAllUserScripts(user.id, id);
           toast.success(`Deleted ${deletedCount} scripts`);
         }
       }
-      
-      toast.success(`User ${action}ned`); 
-      refreshData(); 
-    }
-    catch (err) { toast.error(err.message); }
+      toast.success(`User ${action}ned`);
+      refreshData();
+    } catch (err) { toast.error(err.message); }
   };
 
   const handleTimeout = async (id) => {
@@ -110,43 +364,26 @@ const Owner = () => {
     if (!days || isNaN(days)) return;
     const reason = window.prompt('Enter timeout reason:');
     if (reason === null) return;
-    try { 
-      await api.timeoutUser(id, user.username, reason, parseFloat(days)); 
-      toast.success(`User timed out for ${days} days`); 
-      refreshData(); 
-    }
-    catch (err) { toast.error(err.message); }
+    try {
+      await api.timeoutUser(id, user.username, reason, parseFloat(days));
+      toast.success(`User timed out for ${days} days`);
+      refreshData();
+    } catch (err) { toast.error(err.message); }
   };
 
-  const handleCreateKey = async () => {
-    if (apps.length === 0) return toast.error("Create an App first!");
-    
-    const appNames = apps.map((a, i) => `${i + 1}. ${a.name} (${a.id})`).join('\n');
-    const appChoice = prompt(`Select an App (number):\n${appNames}`, "1");
-    if (!appChoice) return;
-    
-    const selectedApp = apps[parseInt(appChoice) - 1];
-    if (!selectedApp) return toast.error("Invalid choice");
-
-    const count = prompt("How many keys to generate?", "1");
-    if (!count || isNaN(count)) return;
-
-    const durations = ["30 mins", "1 hour", "1 day", "7 days", "30 days", "lifetime"];
-    const durationChoice = prompt(`Select Duration (number):\n${durations.map((d, i) => `${i + 1}. ${d}`).join('\n')}`, "3");
-    const duration = durations[parseInt(durationChoice) - 1] || "1 day";
-
-    const levels = ["Free", "Standard", "Premium", "VIP", "Owner"];
-    const levelChoice = prompt(`Select Level (number):\n${levels.map((l, i) => `${i + 1}. ${l}`).join('\n')}`, "2");
-    const level = (levels[parseInt(levelChoice) - 1] || "Standard").toLowerCase();
-
-    const isOneTime = confirm("Is this a one-time use key? (Revokes after first validation)");
-
-    const note = prompt("Enter a note for these keys (optional):");
-    
+  // Inline key gen handler — receives form values from KeyGenPanel
+  const handleGenerateKeys = async ({ appId, count, duration, level, isOneTime, note }) => {
     try {
-      await api.createKey(user.id, selectedApp.id, note || '', null, duration, parseInt(count), level, isOneTime);
-      toast.success(`Generated ${count} ${level} keys successfully!`);
-      refreshData();
+      const result = await api.createKey(user.id, appId, note || '', null, duration, count, level, isOneTime);
+      setShowKeyGenPanel(false);
+      toast.success(`Generated ${count} ${level} key${count > 1 ? 's' : ''}!`);
+      await refreshData();
+      // Show bulk copy modal — result should be the array of key strings
+      // Adapt to whatever shape your API returns:
+      const keyStrings = Array.isArray(result)
+        ? result.map(k => (typeof k === 'string' ? k : k.key))
+        : (result?.keys || []);
+      if (keyStrings.length > 0) setBulkCopyKeys(keyStrings);
     } catch (err) { toast.error(err.message); }
   };
 
@@ -178,7 +415,6 @@ const Owner = () => {
     if (!version) return;
     const downloadUrl = prompt("Enter new download URL:", currentUrl);
     if (downloadUrl === null) return;
-    
     try {
       const res = await fetch('/api/apps/update-version', {
         method: 'POST',
@@ -244,47 +480,35 @@ const Owner = () => {
   };
 
   const isOwner = user?.role === 'owner';
-  
-  const filteredUsers = users.filter(u => {
-    const matchSearch = u.username.toLowerCase().includes(userSearch.toLowerCase()) || 
-      String(u.id).includes(userSearch) ||
-      u.role.toLowerCase().includes(userSearch.toLowerCase()) ||
-      (u.email || '').toLowerCase().includes(userSearch.toLowerCase());
-    const matchFilter = userFilter === 'all' ? true : 
-      userFilter === 'admin' ? u.role === 'admin' :
-      userFilter === 'banned' ? u.banned :
-      userFilter === 'warned' ? (u.warnings || 0) > 0 : true;
-    return matchSearch && matchFilter;
-  });
 
+  // ── Filtered lists ──
   const filteredLogs = logs.filter(log => {
     const matchFilter = logFilter === 'all' ? true : log.action.toLowerCase().includes(logFilter.toLowerCase());
-    const matchSearch = !logSearch || 
+    const matchSearch = !logSearch ||
       log.action.toLowerCase().includes(logSearch.toLowerCase()) ||
       (log.actor || '').toLowerCase().includes(logSearch.toLowerCase()) ||
       (log.details || '').toLowerCase().includes(logSearch.toLowerCase());
     return matchFilter && matchSearch;
   });
 
-  const filteredApps = apps.filter(a => 
+  const filteredApps = apps.filter(a =>
     a.name.toLowerCase().includes(appSearch.toLowerCase()) ||
     a.id.toLowerCase().includes(appSearch.toLowerCase())
   );
 
-  const adminCount = users.filter(u => u.role === 'admin').length;
-  const bannedCount = users.filter(u => u.banned).length;
-  const warnedCount = users.filter(u => (u.warnings || 0) > 0).length;
-
   const filteredKeysList = keys.filter(k => {
-    const matchesSearch = k.key.toLowerCase().includes(keySearch.toLowerCase());
+    const matchesSearch = k.key.toLowerCase().includes(keySearch.toLowerCase()) ||
+      (k.note || '').toLowerCase().includes(keySearch.toLowerCase());
     const matchesStatus = keyFilter === 'all' || (keyFilter === 'used' ? k.lastUsed : !k.lastUsed);
     const matchesApp = keyAppFilter === 'all' || k.appId === keyAppFilter;
     return matchesSearch && matchesStatus && matchesApp;
   });
 
   const filteredUsersList = users.filter(u => {
-    const matchesSearch = u.username.toLowerCase().includes(userSearch.toLowerCase()) || u.id.includes(userSearch);
-    const matchesRole = userFilter === 'all' || 
+    const matchesSearch = u.username.toLowerCase().includes(userSearch.toLowerCase()) ||
+      String(u.id).includes(userSearch) ||
+      (u.email || '').toLowerCase().includes(userSearch.toLowerCase());
+    const matchesRole = userFilter === 'all' ||
       (userFilter === 'admin' ? u.role === 'admin' :
        userFilter === 'banned' ? u.banned :
        userFilter === 'warned' ? (u.warnings || 0) > 0 : u.role === userFilter);
@@ -292,8 +516,36 @@ const Owner = () => {
     return matchesSearch && matchesRole && matchesApp;
   });
 
+  // Paginated slices
+  const pagedKeys = filteredKeysList.slice((keyPage - 1) * KEY_PER_PAGE, keyPage * KEY_PER_PAGE);
+  const pagedLogs = filteredLogs.slice((logPage - 1) * LOG_PER_PAGE, logPage * LOG_PER_PAGE);
+  const pagedUsers = filteredUsersList.slice((userPage - 1) * USER_PER_PAGE, userPage * USER_PER_PAGE);
+
+  const adminCount = users.filter(u => u.role === 'admin').length;
+  const bannedCount = users.filter(u => u.banned).length;
+  const warnedCount = users.filter(u => (u.warnings || 0) > 0).length;
+
   return (
     <div className="container" style={{ padding: '40px 16px' }}>
+
+      {/* Modals */}
+      <AnimatePresence>
+        {showKeyGenPanel && (
+          <KeyGenPanel
+            apps={apps}
+            onGenerate={handleGenerateKeys}
+            onClose={() => setShowKeyGenPanel(false)}
+          />
+        )}
+        {bulkCopyKeys && (
+          <BulkCopyModal
+            keys={bulkCopyKeys}
+            onClose={() => setBulkCopyKeys(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '10px' }}>
         <div>
           <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '2rem', marginBottom: '4px' }}>
@@ -335,7 +587,7 @@ const Owner = () => {
         {[
           { key: 'overview', label: 'Overview', icon: <TrendingUp size={14} /> },
           { key: 'users', label: `Users (${users.length})`, icon: <Users size={14} /> },
-          { key: 'logs', label: `Activity Logs`, icon: <Activity size={14} /> },
+          { key: 'logs', label: 'Activity Logs', icon: <Activity size={14} /> },
           { key: 'apps', label: `Apps (${apps.length})`, icon: <Layers size={14} /> },
           { key: 'keys', label: `Keys (${keys.length})`, icon: <Key size={14} /> },
         ].filter(t => (t.key !== 'keys' && t.key !== 'apps' && t.key !== 'logs' || isOwner)).map(t => (
@@ -364,26 +616,18 @@ const Owner = () => {
             <div className="glass-card" style={{ padding: '20px' }}>
               <h3 style={{ marginBottom: '12px', fontSize: '1rem' }}>Platform Health</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="text-muted" style={{ fontSize: '0.85rem' }}>Database Status</span>
-                  <span className="badge verified" style={{ fontSize: '0.72rem' }}>● Online</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="text-muted" style={{ fontSize: '0.85rem' }}>Active Users</span>
-                  <span style={{ fontWeight: 600 }}>{stats.onlineUsers || 0}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="text-muted" style={{ fontSize: '0.85rem' }}>Total Visitors</span>
-                  <span style={{ fontWeight: 600, color: 'var(--accent-color)' }}>{stats.totalVisitors || 0}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="text-muted" style={{ fontSize: '0.85rem' }}>Warned Users</span>
-                  <span style={{ fontWeight: 600, color: warnedCount > 0 ? 'var(--warning)' : undefined }}>{warnedCount}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="text-muted" style={{ fontSize: '0.85rem' }}>Banned Users</span>
-                  <span style={{ fontWeight: 600, color: bannedCount > 0 ? 'var(--danger)' : undefined }}>{bannedCount}</span>
-                </div>
+                {[
+                  { label: 'Database Status', value: <span className="badge verified" style={{ fontSize: '0.72rem' }}>● Online</span> },
+                  { label: 'Active Users', value: <span style={{ fontWeight: 600 }}>{stats.onlineUsers || 0}</span> },
+                  { label: 'Total Visitors', value: <span style={{ fontWeight: 600, color: 'var(--accent-color)' }}>{stats.totalVisitors || 0}</span> },
+                  { label: 'Warned Users', value: <span style={{ fontWeight: 600, color: warnedCount > 0 ? 'var(--warning)' : undefined }}>{warnedCount}</span> },
+                  { label: 'Banned Users', value: <span style={{ fontWeight: 600, color: bannedCount > 0 ? 'var(--danger)' : undefined }}>{bannedCount}</span> },
+                ].map(({ label, value }) => (
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className="text-muted" style={{ fontSize: '0.85rem' }}>{label}</span>
+                    {value}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -413,18 +657,18 @@ const Owner = () => {
                   <option value="owner">Owner</option>
                   <option value="admin">Admin</option>
                   <option value="user">User</option>
+                  <option value="banned">Banned</option>
+                  <option value="warned">Warned</option>
                 </select>
               </div>
             </div>
           </div>
           <table className="admin-table">
             <thead>
-              <tr>
-                <th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Warns</th><th>Status</th><th style={{ textAlign: 'right' }}>Actions</th>
-              </tr>
+              <tr><th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Warns</th><th>Status</th><th style={{ textAlign: 'right' }}>Actions</th></tr>
             </thead>
             <tbody>
-              {filteredUsersList.map(u => (
+              {pagedUsers.map(u => (
                 <tr key={u.id}>
                   <td style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>#{u.id}</td>
                   <td style={{ fontWeight: 500, fontSize: '0.88rem' }}>{u.username}</td>
@@ -436,11 +680,9 @@ const Owner = () => {
                   </td>
                   <td style={{ color: u.warnings > 0 ? 'var(--warning)' : 'var(--text-muted)', fontSize: '0.85rem' }}>{u.warnings || 0}</td>
                   <td>
-                    {u.banned ? (
-                      <span className="badge" style={{ background: 'rgba(239,68,68,0.12)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.25)', fontSize: '0.68rem' }}>Banned</span>
-                    ) : (
-                      <span className="badge verified" style={{ fontSize: '0.68rem' }}>Active</span>
-                    )}
+                    {u.banned
+                      ? <span className="badge" style={{ background: 'rgba(239,68,68,0.12)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.25)', fontSize: '0.68rem' }}>Banned</span>
+                      : <span className="badge verified" style={{ fontSize: '0.68rem' }}>Active</span>}
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
@@ -466,13 +708,17 @@ const Owner = () => {
                   </td>
                 </tr>
               ))}
+              {pagedUsers.length === 0 && (
+                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '32px' }} className="text-muted">No users found.</td></tr>
+              )}
             </tbody>
           </table>
+          <Pagination total={filteredUsersList.length} page={userPage} perPage={USER_PER_PAGE} onPageChange={setUserPage} />
         </motion.div>
       )}
 
       {/* Logs */}
-      {activeSection === 'logs' && (
+      {activeSection === 'logs' && isOwner && (
         <motion.div className="admin-table-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <div style={{ padding: '12px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-color-lighter)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
@@ -492,7 +738,7 @@ const Owner = () => {
               <tr><th>Date</th><th>Action</th><th>Actor</th><th>Details</th></tr>
             </thead>
             <tbody>
-              {filteredLogs.slice(0, 150).map(log => (
+              {pagedLogs.map(log => (
                 <tr key={log.id}>
                   <td style={{ color: 'var(--text-muted)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>{new Date(log.date).toLocaleString()}</td>
                   <td style={{ fontWeight: 500, color: 'var(--primary-color)', fontSize: '0.85rem' }}>{log.action}</td>
@@ -500,11 +746,12 @@ const Owner = () => {
                   <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{log.details}</td>
                 </tr>
               ))}
-              {filteredLogs.length === 0 && (
+              {pagedLogs.length === 0 && (
                 <tr><td colSpan="4" style={{ textAlign: 'center', padding: '32px' }} className="text-muted">No logs found.</td></tr>
               )}
             </tbody>
           </table>
+          <Pagination total={filteredLogs.length} page={logPage} perPage={LOG_PER_PAGE} onPageChange={setLogPage} />
         </motion.div>
       )}
 
@@ -536,7 +783,7 @@ const Owner = () => {
                         {showSecret[a.id] ? a.secret : '••••••••••••••••'}
                       </span>
                       <button className="btn btn-secondary" style={{ padding: '2px 6px' }} onClick={() => setShowSecret(prev => ({ ...prev, [a.id]: !prev[a.id] }))}>
-                        {showSecret[a.id] ? <Eye size={10} /> : <Eye size={10} style={{ opacity: 0.5 }} />}
+                        <Eye size={10} style={{ opacity: showSecret[a.id] ? 1 : 0.5 }} />
                       </button>
                       {showSecret[a.id] && (
                         <button className="btn btn-secondary" style={{ padding: '2px 6px' }} onClick={() => { navigator.clipboard.writeText(a.secret); toast.success("Copied!"); }}>
@@ -578,25 +825,29 @@ const Owner = () => {
         <motion.div className="admin-table-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <div style={{ padding: '12px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-color-lighter)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <button className="btn btn-primary" onClick={handleCreateKey} style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
-                + Bulk Generate Keys
+              <button className="btn btn-primary" onClick={() => {
+                if (apps.length === 0) return toast.error("Create an App first!");
+                setShowKeyGenPanel(true);
+              }} style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                <Zap size={13} /> Generate Keys
               </button>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <select className="input-field" value={keyAppFilter} onChange={e => setKeyAppFilter(e.target.value)} style={{ margin: 0, fontSize: '0.82rem', padding: '4px 12px' }}>
-                  <option value="all">All Apps</option>
-                  {apps.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
-                <select className="input-field" value={keyFilter} onChange={e => setKeyFilter(e.target.value)} style={{ margin: 0, fontSize: '0.82rem', padding: '4px 12px' }}>
-                  <option value="all">All Status</option>
-                  <option value="used">Used</option>
-                  <option value="unused">Unused</option>
-                </select>
-              </div>
+              <select className="input-field" value={keyAppFilter} onChange={e => setKeyAppFilter(e.target.value)} style={{ margin: 0, fontSize: '0.82rem', padding: '4px 12px' }}>
+                <option value="all">All Apps</option>
+                {apps.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+              <select className="input-field" value={keyFilter} onChange={e => setKeyFilter(e.target.value)} style={{ margin: 0, fontSize: '0.82rem', padding: '4px 12px' }}>
+                <option value="all">All Status</option>
+                <option value="used">Used</option>
+                <option value="unused">Unused</option>
+              </select>
             </div>
-            <div style={{ position: 'relative' }}>
-              <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input type="text" className="input-field" placeholder="Search keys..." value={keySearch}
-                onChange={e => setKeySearch(e.target.value)} style={{ paddingLeft: '30px', maxWidth: '200px', margin: 0, fontSize: '0.82rem' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{filteredKeysList.length} keys</span>
+              <div style={{ position: 'relative' }}>
+                <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input type="text" className="input-field" placeholder="Search keys..." value={keySearch}
+                  onChange={e => setKeySearch(e.target.value)} style={{ paddingLeft: '30px', maxWidth: '200px', margin: 0, fontSize: '0.82rem' }} />
+              </div>
             </div>
           </div>
           <table className="admin-table">
@@ -604,7 +855,7 @@ const Owner = () => {
               <tr><th>Key</th><th>App</th><th>Level</th><th>Type</th><th>Note</th><th>HWID</th><th>Status</th><th>Expires</th><th style={{ textAlign: 'right' }}>Actions</th></tr>
             </thead>
             <tbody>
-              {filteredKeysList.map(k => (
+              {pagedKeys.map(k => (
                 <tr key={k._id || k.key}>
                   <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--primary-color)' }}>{k.key}</td>
                   <td style={{ fontSize: '0.75rem', fontWeight: 600 }}>{apps.find(a => a.id === k.appId)?.name || k.appId}</td>
@@ -614,7 +865,9 @@ const Owner = () => {
                     </span>
                   </td>
                   <td style={{ fontSize: '0.75rem' }}>
-                    {k.isOneTime ? <span className="text-warning" style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Zap size={10} /> 1-Time</span> : <span className="text-muted">Standard</span>}
+                    {k.isOneTime
+                      ? <span className="text-warning" style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Zap size={10} /> 1-Time</span>
+                      : <span className="text-muted">Standard</span>}
                   </td>
                   <td style={{ fontSize: '0.85rem' }}>{k.note || '—'}</td>
                   <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={k.hwid}>
@@ -644,18 +897,21 @@ const Owner = () => {
                   </td>
                 </tr>
               ))}
-              {filteredKeysList.length === 0 && (
+              {pagedKeys.length === 0 && (
                 <tr><td colSpan="9" style={{ textAlign: 'center', padding: '32px' }} className="text-muted">No keys found.</td></tr>
               )}
             </tbody>
           </table>
+          <Pagination total={filteredKeysList.length} page={keyPage} perPage={KEY_PER_PAGE} onPageChange={setKeyPage} />
         </motion.div>
       )}
-      {activeSection === 'logs' && isOwner && (
-        <motion.div className="admin-table-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <div className="section-header" style={{ padding: '16px' }}>
-            <h2 style={{ margin: 0 }}>Security & Activity Logs</h2>
-            <p className="text-muted" style={{ fontSize: '0.8rem' }}>Monitor all validation attempts and flagged hardware IDs.</p>
+
+      {/* Security Logs (owner only, separate from activity logs) */}
+      {activeSection === 'logs' && isOwner && appLogs.length > 0 && (
+        <motion.div className="admin-table-container" style={{ marginTop: '24px' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <div className="section-header" style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-color-lighter)' }}>
+            <h2 style={{ margin: 0, fontSize: '1rem' }}>Security & Validation Logs</h2>
+            <p className="text-muted" style={{ fontSize: '0.8rem', margin: '2px 0 0' }}>Monitor all key validation attempts and flagged hardware IDs.</p>
           </div>
           <table className="admin-table">
             <thead>
@@ -677,9 +933,6 @@ const Owner = () => {
                   <td style={{ fontSize: '0.75rem', color: log.success ? 'inherit' : 'var(--danger)' }}>{log.error || 'N/A'}</td>
                 </tr>
               ))}
-              {appLogs.length === 0 && (
-                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '32px' }} className="text-muted">No security logs found.</td></tr>
-              )}
             </tbody>
           </table>
         </motion.div>
