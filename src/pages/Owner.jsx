@@ -1,9 +1,56 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api/db';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, Users, Activity, AlertTriangle, Ban, CheckCircle, Key, Search, Shield, Eye, ThumbsUp, Globe, Star, MessageSquare, TrendingUp, RefreshCw, Clock, Layers, Fingerprint, Trash2, Copy, Zap, ChevronLeft, ChevronRight, X, Check } from 'lucide-react';
+import { ShieldAlert, Users, Activity, AlertTriangle, Ban, CheckCircle, Key, Search, Shield, Eye, ThumbsUp, Globe, TrendingUp, RefreshCw, Clock, Layers, Fingerprint, Trash2, Copy, Zap, ChevronLeft, ChevronRight, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+
+/* ── shared modal overlay styles ── */
+const overlayStyle = {
+  position: 'fixed', inset: 0, zIndex: 9999,
+  background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
+};
+
+const modalCard = {
+  width: '100%', position: 'relative',
+  background: 'var(--bg-color-lighter, #111)',
+  border: '1px solid var(--border-color)',
+  borderRadius: '16px', boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
+};
+
+/* ── small field label ── */
+const FieldLabel = ({ children }) => (
+  <span style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+    {children}
+  </span>
+);
+
+/* ── pill button ── */
+const Pill = ({ active, onClick, children }) => (
+  <button onClick={onClick} style={{
+    padding: '5px 12px', fontSize: '0.76rem', borderRadius: '999px', cursor: 'pointer',
+    border: active ? '1px solid var(--primary-color)' : '1px solid var(--border-color)',
+    background: active ? 'var(--primary-color)' : 'transparent',
+    color: active ? '#fff' : 'var(--text-muted)',
+    transition: 'all 0.15s', fontWeight: active ? 600 : 400,
+  }}>{children}</button>
+);
+
+/* ── toggle switch ── */
+const Toggle = ({ value, onChange }) => (
+  <div onClick={() => onChange(!value)} style={{
+    width: '40px', height: '22px', borderRadius: '11px', position: 'relative',
+    background: value ? 'var(--primary-color)' : 'var(--border-color)',
+    transition: 'background 0.2s', flexShrink: 0, cursor: 'pointer',
+  }}>
+    <div style={{
+      position: 'absolute', top: '3px', left: value ? '21px' : '3px',
+      width: '16px', height: '16px', borderRadius: '50%',
+      background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+    }} />
+  </div>
+);
 
 // ─── Inline Key Generator Panel ────────────────────────────────────────────────
 const KeyGenPanel = ({ apps, onGenerate, onClose }) => {
@@ -15,194 +62,209 @@ const KeyGenPanel = ({ apps, onGenerate, onClose }) => {
     isOneTime: false,
     note: '',
   });
+  const [loading, setLoading] = useState(false);
 
   const durations = ['30 mins', '1 hour', '1 day', '7 days', '30 days', 'lifetime'];
   const levels = ['free', 'standard', 'premium', 'vip', 'owner'];
+  const levelColors = { free: '#94a3b8', standard: '#60a5fa', premium: '#a78bfa', vip: '#f59e0b', owner: '#ef4444' };
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.appId) return toast.error('Select an app first');
     if (!form.count || isNaN(form.count) || form.count < 1) return toast.error('Enter a valid count');
-    onGenerate(form);
+    setLoading(true);
+    try { await onGenerate(form); }
+    finally { setLoading(false); }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
-      }}
-      onClick={e => e.target === e.currentTarget && onClose()}
-    >
+    <div style={overlayStyle} onClick={e => e.target === e.currentTarget && onClose()}>
       <motion.div
-        initial={{ scale: 0.95, y: 16 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.95, y: 16 }}
-        className="glass-card"
-        style={{ width: '100%', maxWidth: '480px', padding: '28px', position: 'relative' }}
+        initial={{ opacity: 0, scale: 0.96, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 20 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        style={{ ...modalCard, maxWidth: '500px', padding: '32px' }}
       >
-        <button onClick={onClose} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
-          <X size={18} />
-        </button>
-        <h2 style={{ fontSize: '1.1rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Key size={18} className="text-primary" /> Generate Keys
-        </h2>
+        {/* header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'rgba(var(--primary-rgb,99,102,241),0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Key size={16} style={{ color: 'var(--primary-color)' }} />
+            </div>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Generate Keys</h2>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Configure and bulk-create license keys</p>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px', borderRadius: '6px' }}>
+            <X size={18} />
+          </button>
+        </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {/* App */}
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>App</span>
-            <select className="input-field" value={form.appId} onChange={e => set('appId', e.target.value)} style={{ margin: 0 }}>
-              {apps.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </select>
-          </label>
-
-          {/* Count */}
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quantity</span>
-            <input
-              type="number" min={1} max={500} className="input-field"
-              value={form.count} onChange={e => set('count', parseInt(e.target.value) || 1)}
-              style={{ margin: 0 }}
-            />
-          </label>
-
-          {/* Duration pill selector */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Duration</span>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              {durations.map(d => (
-                <button key={d}
-                  className={`btn ${form.duration === d ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ padding: '4px 10px', fontSize: '0.76rem' }}
-                  onClick={() => set('duration', d)}>{d}</button>
-              ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          {/* App + Count row */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <FieldLabel>App</FieldLabel>
+              <select className="input-field" value={form.appId} onChange={e => set('appId', e.target.value)} style={{ margin: 0, height: '38px' }}>
+                {apps.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <FieldLabel>Quantity</FieldLabel>
+              <input type="number" min={1} max={500} className="input-field"
+                value={form.count} onChange={e => set('count', Math.max(1, parseInt(e.target.value) || 1))}
+                style={{ margin: 0, height: '38px' }} />
             </div>
           </div>
 
-          {/* Level pill selector */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Level</span>
+          {/* Duration */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <FieldLabel>Duration</FieldLabel>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {durations.map(d => <Pill key={d} active={form.duration === d} onClick={() => set('duration', d)}>{d}</Pill>)}
+            </div>
+          </div>
+
+          {/* Level */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <FieldLabel>Level</FieldLabel>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               {levels.map(l => (
-                <button key={l}
-                  className={`btn ${form.level === l ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ padding: '4px 10px', fontSize: '0.76rem', textTransform: 'capitalize' }}
-                  onClick={() => set('level', l)}>{l}</button>
+                <button key={l} onClick={() => set('level', l)} style={{
+                  padding: '5px 14px', fontSize: '0.76rem', borderRadius: '999px', cursor: 'pointer',
+                  border: `1px solid ${form.level === l ? levelColors[l] : 'var(--border-color)'}`,
+                  background: form.level === l ? `${levelColors[l]}22` : 'transparent',
+                  color: form.level === l ? levelColors[l] : 'var(--text-muted)',
+                  fontWeight: form.level === l ? 700 : 400, transition: 'all 0.15s', textTransform: 'capitalize',
+                }}>{l}</button>
               ))}
             </div>
           </div>
 
           {/* One-time toggle */}
-          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none' }}>
-            <div
-              onClick={() => set('isOneTime', !form.isOneTime)}
-              style={{
-                width: '36px', height: '20px', borderRadius: '10px', position: 'relative',
-                background: form.isOneTime ? 'var(--primary-color)' : 'var(--border-color)',
-                transition: 'background 0.2s', flexShrink: 0, cursor: 'pointer'
-              }}
-            >
-              <div style={{
-                position: 'absolute', top: '2px', left: form.isOneTime ? '18px' : '2px',
-                width: '16px', height: '16px', borderRadius: '50%',
-                background: '#fff', transition: 'left 0.2s'
-              }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)' }}>
+            <div>
+              <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 500 }}>One-time use</p>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Key is revoked automatically after first validation</p>
             </div>
-            <span style={{ fontSize: '0.85rem' }}>One-time use <span className="text-muted">(revokes after first validation)</span></span>
-          </label>
+            <Toggle value={form.isOneTime} onChange={v => set('isOneTime', v)} />
+          </div>
 
           {/* Note */}
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Note <span style={{ textTransform: 'none', color: 'var(--text-muted)' }}>(optional)</span></span>
-            <input
-              type="text" className="input-field" placeholder="e.g. Giveaway batch #3"
-              value={form.note} onChange={e => set('note', e.target.value)}
-              style={{ margin: 0 }}
-            />
-          </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <FieldLabel>Note <span style={{ textTransform: 'none', fontWeight: 400 }}>(optional)</span></FieldLabel>
+            <input type="text" className="input-field" placeholder="e.g. Giveaway batch #3"
+              value={form.note} onChange={e => set('note', e.target.value)} style={{ margin: 0 }} />
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', marginTop: '22px', justifyContent: 'flex-end' }}>
-          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleSubmit}>
-            <Zap size={14} /> Generate {form.count > 1 ? `${form.count} Keys` : 'Key'}
+        {/* footer */}
+        <div style={{ display: 'flex', gap: '8px', marginTop: '24px', justifyContent: 'flex-end' }}>
+          <button className="btn btn-secondary" onClick={onClose} disabled={loading}>Cancel</button>
+          <button className="btn btn-primary" onClick={handleSubmit} disabled={loading} style={{ minWidth: '130px' }}>
+            {loading
+              ? <><RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} /> Generating…</>
+              : <><Zap size={13} /> Generate {form.count > 1 ? `${form.count} Keys` : 'Key'}</>}
           </button>
         </div>
       </motion.div>
-    </motion.div>
+    </div>
   );
 };
 
 // ─── Bulk Copy Modal ─────────────────────────────────────────────────────────
-const BulkCopyModal = ({ keys, onClose }) => {
-  const [copied, setCopied] = useState(false);
+const BulkCopyModal = ({ keyList, onClose }) => {
+  const [copiedAll, setCopiedAll] = useState(false);
+  const [copiedIdx, setCopiedIdx] = useState(null);
+
+  // Guard: ensure keyList is always a safe array of strings
+  const safeKeys = Array.isArray(keyList)
+    ? keyList.map(k => (typeof k === 'string' ? k : k?.key || String(k))).filter(Boolean)
+    : [];
 
   const handleCopyAll = () => {
-    navigator.clipboard.writeText(keys.join('\n'));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (!safeKeys.length) return;
+    navigator.clipboard.writeText(safeKeys.join('\n')).then(() => {
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 2000);
+    });
+  };
+
+  const handleCopyOne = (k, i) => {
+    navigator.clipboard.writeText(k).then(() => {
+      setCopiedIdx(i);
+      setTimeout(() => setCopiedIdx(null), 1500);
+    });
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
-      }}
-      onClick={e => e.target === e.currentTarget && onClose()}
-    >
+    <div style={overlayStyle} onClick={e => e.target === e.currentTarget && onClose()}>
       <motion.div
-        initial={{ scale: 0.95, y: 16 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.95, y: 16 }}
-        className="glass-card"
-        style={{ width: '100%', maxWidth: '520px', padding: '28px', position: 'relative', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
+        initial={{ opacity: 0, scale: 0.96, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 20 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        style={{ ...modalCard, maxWidth: '540px', padding: '28px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
       >
-        <button onClick={onClose} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
-          <X size={18} />
-        </button>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', paddingRight: '24px' }}>
-          <h2 style={{ fontSize: '1.1rem', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <CheckCircle size={18} className="text-success" />
-            {keys.length} {keys.length === 1 ? 'Key' : 'Keys'} Generated
-          </h2>
-          <button
-            className={`btn ${copied ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-            onClick={handleCopyAll}
-          >
-            {copied ? <><Check size={13} /> Copied!</> : <><Copy size={13} /> Copy All</>}
-          </button>
+        {/* header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'rgba(34,197,94,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircle size={16} style={{ color: '#22c55e' }} />
+            </div>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>
+                {safeKeys.length} {safeKeys.length === 1 ? 'Key' : 'Keys'} Generated
+              </h2>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Copy individually or grab them all at once</p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button onClick={handleCopyAll} style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '7px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
+              border: copiedAll ? '1px solid #22c55e' : '1px solid var(--primary-color)',
+              background: copiedAll ? 'rgba(34,197,94,0.12)' : 'rgba(var(--primary-rgb,99,102,241),0.12)',
+              color: copiedAll ? '#22c55e' : 'var(--primary-color)', transition: 'all 0.2s',
+            }}>
+              {copiedAll ? <><Check size={13} /> Copied!</> : <><Copy size={13} /> Copy All</>}
+            </button>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px' }}>
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
+        {/* key list */}
         <div style={{
-          overflowY: 'auto', flex: 1,
-          background: 'var(--bg-color-dark)', borderRadius: '8px',
-          border: '1px solid var(--border-color)', padding: '12px'
+          overflowY: 'auto', flex: 1, borderRadius: '10px',
+          background: 'rgba(0,0,0,0.25)', border: '1px solid var(--border-color)',
         }}>
-          {keys.map((k, i) => (
+          {safeKeys.length === 0 && (
+            <p style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              No keys to display.
+            </p>
+          )}
+          {safeKeys.map((k, i) => (
             <div key={i} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '5px 4px', borderBottom: i < keys.length - 1 ? '1px solid var(--border-color)' : 'none',
-              gap: '8px'
+              padding: '9px 14px', gap: '12px',
+              borderBottom: i < safeKeys.length - 1 ? '1px solid var(--border-color)' : 'none',
+              background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.018)',
+              transition: 'background 0.1s',
             }}>
-              <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: 'var(--primary-color)', wordBreak: 'break-all' }}>{k}</span>
-              <button
-                className="btn btn-secondary"
-                style={{ padding: '3px 7px', flexShrink: 0 }}
-                onClick={() => { navigator.clipboard.writeText(k); toast.success('Copied!'); }}
-              >
-                <Copy size={11} />
+              <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: 'var(--primary-color)', wordBreak: 'break-all', flex: 1 }}>{k}</span>
+              <button onClick={() => handleCopyOne(k, i)} style={{
+                flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px',
+                padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.72rem',
+                border: copiedIdx === i ? '1px solid #22c55e' : '1px solid var(--border-color)',
+                background: copiedIdx === i ? 'rgba(34,197,94,0.1)' : 'transparent',
+                color: copiedIdx === i ? '#22c55e' : 'var(--text-muted)', transition: 'all 0.15s',
+              }}>
+                {copiedIdx === i ? <Check size={11} /> : <Copy size={11} />}
               </button>
             </div>
           ))}
@@ -212,7 +274,7 @@ const BulkCopyModal = ({ keys, onClose }) => {
           Done
         </button>
       </motion.div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -221,26 +283,44 @@ const Pagination = ({ total, page, perPage, onPageChange }) => {
   const totalPages = Math.ceil(total / perPage);
   if (totalPages <= 1) return null;
 
-  const pages = [];
   const delta = 2;
+  const pages = [];
   for (let i = Math.max(1, page - delta); i <= Math.min(totalPages, page + delta); i++) pages.push(i);
 
+  const btnBase = {
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    minWidth: '30px', height: '30px', padding: '0 6px',
+    borderRadius: '7px', fontSize: '0.78rem', cursor: 'pointer',
+    border: '1px solid var(--border-color)', background: 'transparent',
+    color: 'var(--text-muted)', transition: 'all 0.15s',
+  };
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '10px 12px', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)' }}>
-      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginRight: '8px' }}>
-        {Math.min((page - 1) * perPage + 1, total)}–{Math.min(page * perPage, total)} of {total}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '12px 16px', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.15)' }}>
+      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginRight: '10px' }}>
+        {Math.min((page - 1) * perPage + 1, total)}–{Math.min(page * perPage, total)} <span style={{ opacity: 0.5 }}>of</span> {total}
       </span>
-      <button className="btn btn-secondary" style={{ padding: '4px 8px' }} onClick={() => onPageChange(page - 1)} disabled={page === 1}>
+      <button style={{ ...btnBase, opacity: page === 1 ? 0.35 : 1 }} onClick={() => onPageChange(page - 1)} disabled={page === 1}>
         <ChevronLeft size={14} />
       </button>
-      {page > delta + 1 && <><button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.78rem' }} onClick={() => onPageChange(1)}>1</button><span className="text-muted" style={{ fontSize: '0.78rem' }}>…</span></>}
+      {page > delta + 1 && <>
+        <button style={btnBase} onClick={() => onPageChange(1)}>1</button>
+        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', padding: '0 2px' }}>…</span>
+      </>}
       {pages.map(p => (
-        <button key={p} className={`btn ${p === page ? 'btn-primary' : 'btn-secondary'}`}
-          style={{ padding: '4px 9px', fontSize: '0.78rem', minWidth: '30px' }}
-          onClick={() => onPageChange(p)}>{p}</button>
+        <button key={p} onClick={() => onPageChange(p)} style={{
+          ...btnBase,
+          background: p === page ? 'var(--primary-color)' : 'transparent',
+          borderColor: p === page ? 'var(--primary-color)' : 'var(--border-color)',
+          color: p === page ? '#fff' : 'var(--text-muted)',
+          fontWeight: p === page ? 700 : 400,
+        }}>{p}</button>
       ))}
-      {page < totalPages - delta && <><span className="text-muted" style={{ fontSize: '0.78rem' }}>…</span><button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.78rem' }} onClick={() => onPageChange(totalPages)}>{totalPages}</button></>}
-      <button className="btn btn-secondary" style={{ padding: '4px 8px' }} onClick={() => onPageChange(page + 1)} disabled={page === totalPages}>
+      {page < totalPages - delta && <>
+        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', padding: '0 2px' }}>…</span>
+        <button style={btnBase} onClick={() => onPageChange(totalPages)}>{totalPages}</button>
+      </>}
+      <button style={{ ...btnBase, opacity: page === totalPages ? 0.35 : 1 }} onClick={() => onPageChange(page + 1)} disabled={page === totalPages}>
         <ChevronRight size={14} />
       </button>
     </div>
